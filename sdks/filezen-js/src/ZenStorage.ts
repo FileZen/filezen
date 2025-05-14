@@ -43,16 +43,16 @@ export class ZenStorage {
       folderId?: string;
     },
   ): Promise<ZenUpload> {
-    let upload: ZenUpload;
+    let zenUpload: ZenUpload;
     if (source instanceof File) {
-      upload = this.buildUpload(source, options);
+      zenUpload = this.buildUpload(source, options);
     } else if (source instanceof Blob) {
       throw new Error('Blob not implemented');
     } else {
       throw new Error('String not implemented');
     }
-    await upload.upload();
-    return upload;
+    await zenUpload.upload();
+    return zenUpload;
   }
 
   buildUpload(
@@ -64,9 +64,9 @@ export class ZenStorage {
       projectId?: string | null;
     },
   ): ZenUpload {
-    let upload: ZenUpload;
+    let zenUpload: ZenUpload;
     if (source instanceof File) {
-      upload = ZenUpload.fromFile(this, source, {
+      zenUpload = ZenUpload.fromFile(this, source, {
         folder: options?.folder,
         folderId: options?.folderId,
         projectId: options?.projectId,
@@ -76,11 +76,11 @@ export class ZenStorage {
     } else {
       throw new Error('String not implemented');
     }
-    this.uploads.set(upload.localId, upload);
+    this.uploads.set(zenUpload.localId, zenUpload);
     this.listeners.forEach((listener: ZenStorageListener) => {
       listener.onUploadsChange?.(this.uploads.values());
     });
-    upload.addListener({
+    zenUpload.addListener({
       onStart: (upload) => {
         this.listeners.forEach((l) => l.onUploadStart?.(upload));
       },
@@ -103,6 +103,6 @@ export class ZenStorage {
         }
       },
     });
-    return upload;
+    return zenUpload;
   }
 }

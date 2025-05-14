@@ -1,7 +1,12 @@
 {
   "extends": "@repo/typescript-config/react-library.json",
   "compilerOptions": {
-    "outDir": "dist"
+    "outDir": "dist",
+    "paths": {
+      "@filezen/js": [
+        "../filezen-js/src"
+      ]
+    }
   },
   "include": [
     "src"

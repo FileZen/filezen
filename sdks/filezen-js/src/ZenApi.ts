@@ -39,23 +39,6 @@ export class ZenApi {
       authorization ?? null;
   }
 
-  async listFiles(options?: {
-    limit?: number;
-    offset?: number;
-  }): Promise<ZenResult<ZenList>> {
-    return await this.axiosInstance
-      .get(`/files`, {
-        params: {
-          limit: options?.limit ?? 20,
-          offset: options?.offset ?? 0,
-        },
-      })
-      .then((result) => {
-        return { data: result.data };
-      })
-      .catch(this.handleError);
-  }
-
   async uploadFile(
     source: string | File | Blob,
     params: {
@@ -100,6 +83,23 @@ export class ZenApi {
         signal: params.abortController?.signal,
         onUploadProgress: (axiosProgress) => {
           params.onUploadProgress?.(axiosProgress);
+        },
+      })
+      .then((result) => {
+        return { data: result.data };
+      })
+      .catch(this.handleError);
+  }
+
+  async listFiles(options?: {
+    limit?: number;
+    offset?: number;
+  }): Promise<ZenResult<ZenList>> {
+    return await this.axiosInstance
+      .get(`/files`, {
+        params: {
+          limit: options?.limit ?? 20,
+          offset: options?.offset ?? 0,
         },
       })
       .then((result) => {

@@ -5,7 +5,7 @@ import {
   ZenStorageListener,
   ZenUpload,
   ZenUploadListener,
-} from '@filezen/node';
+} from '@filezen/js';
 import React, {
   PropsWithChildren,
   useCallback,

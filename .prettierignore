@@ -1,10 +1,4 @@
 .vscode/
 .github/
-out/
 dist/
-test-fixtures/
 node_modules/
-config/
-db/
-postgres-data/
-/postgres-test/
