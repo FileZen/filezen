@@ -1,6 +1,6 @@
 import { ZenError } from './types';
-import { ZenUpload } from './ZenUpload';
 import { ZenApi, ZenApiOptions } from './ZenApi';
+import { ZenUpload } from './ZenUpload';
 
 export type ZenStorageOptions = ZenApiOptions & {};
 
@@ -104,5 +104,9 @@ export class ZenStorage {
       },
     });
     return zenUpload;
+  }
+
+  deleteByUrl(url: string) {
+    return this.api.deleteFileByUrl(url);
   }
 }

@@ -4,9 +4,7 @@ import { ZenError, ZenFile, ZenStorage } from '@filezen/js';
 import React, { useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 
-const fileZen = new ZenStorage({
-  apiUrl: 'http://localhost:3000',
-});
+const fileZen = new ZenStorage();
 
 export const AvatarUpload = () => {
   const [isUploading, setIsUploading] = React.useState(false);
@@ -21,6 +19,11 @@ export const AvatarUpload = () => {
       if (result.error) {
         setError(result.error);
       } else {
+        if (uploadResult) {
+          fileZen.deleteByUrl(uploadResult.cdnUrl!).then((res) => {
+            console.log(`File deleted by url: `, res.data);
+          });
+        }
         setUploadResult(result.file);
       }
     } catch (err) {
@@ -30,11 +33,14 @@ export const AvatarUpload = () => {
     }
   };
 
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    if (acceptedFiles.length > 0) {
-      handleUpload(acceptedFiles[0]);
-    }
-  }, []);
+  const onDrop = useCallback(
+    (acceptedFiles: File[]) => {
+      if (acceptedFiles.length > 0) {
+        handleUpload(acceptedFiles[0]);
+      }
+    },
+    [uploadResult],
+  );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -47,30 +53,25 @@ export const AvatarUpload = () => {
   });
 
   return (
-    <div className="w-full max-w-md mx-auto p-4">
+    <div className="mx-auto w-full max-w-md p-4">
       <div className="space-y-4">
         <div className="text-lg font-medium text-gray-200">Profile Picture</div>
-        
+
         <div
           {...getRootProps()}
-          className={`
-            border-2 border-dashed rounded-lg p-6 text-center cursor-pointer
-            transition-colors duration-200 ease-in-out
-            ${isDragActive ? 'border-indigo-500 bg-indigo-900/20' : 'border-gray-600 hover:border-indigo-400'}
-            ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}
-          `}
+          className={`cursor-pointer rounded-lg border-2 border-dashed p-6 text-center transition-colors duration-200 ease-in-out ${isDragActive ? 'border-indigo-500 bg-indigo-900/20' : 'border-gray-600 hover:border-indigo-400'} ${isUploading ? 'cursor-not-allowed opacity-50' : ''} `}
         >
           <input {...getInputProps()} disabled={isUploading} />
-          
+
           {uploadResult ? (
-            <div className="relative group">
+            <div className="group relative">
               <img
-                src={uploadResult.url}
+                src={uploadResult.cdnUrl}
                 alt="Profile"
-                className="w-32 h-32 rounded-full object-cover mx-auto ring-2 ring-gray-700"
+                className="mx-auto h-32 w-32 rounded-full object-cover ring-2 ring-gray-700"
               />
-              <div className="absolute inset-0 flex items-center justify-center bg-black/70 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-                <span className="text-white text-sm">Click to change</span>
+              <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/70 opacity-0 transition-opacity group-hover:opacity-100">
+                <span className="text-sm text-white">Click to change</span>
               </div>
             </div>
           ) : (
@@ -82,22 +83,20 @@ export const AvatarUpload = () => {
                   <span>Drag & drop an image here, or click to select</span>
                 )}
               </div>
-              <div className="text-sm text-gray-400">
-                PNG, JPG up to 5MB
-              </div>
+              <div className="text-sm text-gray-400">PNG, JPG up to 5MB</div>
             </div>
           )}
         </div>
 
         {error && (
-          <div className="text-red-400 text-sm bg-red-900/20 p-3 rounded-md border border-red-800">
+          <div className="rounded-md border border-red-800 bg-red-900/20 p-3 text-sm text-red-400">
             {error.message}
           </div>
         )}
 
         {isUploading && (
           <div className="flex items-center justify-center space-x-2 text-indigo-400">
-            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-indigo-400"></div>
+            <div className="h-5 w-5 animate-spin rounded-full border-b-2 border-indigo-400"></div>
             <span>Uploading...</span>
           </div>
         )}
