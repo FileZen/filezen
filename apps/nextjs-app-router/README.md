@@ -1,6 +1,6 @@
-# FileZen Next.js React Example
+# FileZen Next.js App Router Example
 
-This is an example project demonstrating how to use FileZen with Next.js for file uploads.
+This is an example project demonstrating how to use FileZen with Next.js App Router for file uploads.
 
 ## Getting Started
 
@@ -11,7 +11,7 @@ This is an example project demonstrating how to use FileZen with Next.js for fil
    ```
 3. Create `.env` file in the root directory and add your FileZen API key:
    ```
-   NEXT_PUBLIC_FILEZEN_API_KEY=your_api_key_here
+   FILEZEN_API_KEY=your_api_key_here
    ```
 4. Start the development server:
    ```bash
@@ -20,9 +20,9 @@ This is an example project demonstrating how to use FileZen with Next.js for fil
 
 ## Project Structure
 
-- [`src/components/AvatarUpload.tsx`](./src/components/AvatarUpload.tsx) - File upload component
+- [`src/app/api/upload/route.ts`](./src/app/api/upload/route.ts) - API route for file uploads
+- [`src/components/FileUpload.tsx`](./src/components/FileUpload.tsx) - File upload component
 - [`src/app/page.tsx`](./src/app/page.tsx) - Main page component
-- [`src/app/layout.tsx`](./src/app/layout.tsx) - Root layout component
 
 ## Learn More
 

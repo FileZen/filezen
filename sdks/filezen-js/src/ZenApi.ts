@@ -14,11 +14,11 @@ export class ZenApi {
   constructor(readonly options: ZenApiOptions = {}) {
     const targetApiKey =
       options.apiKey ??
-      process.env.FILE_ZEN_API_KEY ??
-      process.env.NEXT_PUBLIC_FILE_ZEN_API_KEY;
+      process.env.FILEZEN_API_KEY ??
+      process.env.NEXT_PUBLIC_FILEZEN_API_KEY;
     if (!targetApiKey && !options.authorization) {
       throw new Error(
-        "No API key provided, it's should be provided in options or via environment variable FILE_ZEN_API_KEY or NEXT_PUBLIC_FILEZEN_API_KEY",
+        "No API key provided, it's should be provided in options or via environment variable FILEZEN_API_KEY or NEXT_PUBLIC_FILEZEN_API_KEY",
       );
     }
     this.apiUrl = options.apiUrl ?? 'https://api.filezen.dev';
