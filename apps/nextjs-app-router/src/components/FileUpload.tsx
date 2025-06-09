@@ -59,11 +59,7 @@ export const FileUpload = () => {
 
         <div
           {...getRootProps()}
-          className={`cursor-pointer rounded-lg border-2 border-dashed p-6 text-center transition-colors duration-200 ease-in-out ${
-            isDragActive
-              ? 'border-indigo-500 bg-indigo-900/20'
-              : 'border-gray-600 hover:border-indigo-400'
-          } ${isUploading ? 'cursor-not-allowed opacity-50' : ''}`}
+          className={`cursor-pointer rounded-lg border-2 border-dashed p-6 text-center transition-colors duration-200 ease-in-out ${isDragActive ? 'border-indigo-500 bg-indigo-900/20' : 'border-gray-600 hover:border-indigo-400'} ${isUploading ? 'cursor-not-allowed opacity-50' : ''} `}
         >
           <input {...getInputProps()} disabled={isUploading} />
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { FileZenContext } from '@filezen/react';
+import { FileZenContext } from '../index';
 import * as React from 'react';
 import { DragEvent, useContext, useState } from 'react';
 

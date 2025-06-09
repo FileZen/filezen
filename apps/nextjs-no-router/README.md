@@ -1,4 +1,4 @@
-# FileZen Next.js React Example
+# FileZen Next.js No Router Example
 
 This is an example project demonstrating how to use FileZen with Next.js for file uploads.
 

@@ -2,7 +2,10 @@
 
 import {
   ZenStorage,
+  ZenStorageBulkObject,
   ZenStorageListener,
+  ZenStorageSource,
+  ZenStorageUploadOptions,
   ZenUpload,
   ZenUploadListener,
 } from '@filezen/js';
@@ -29,8 +32,12 @@ export type IFileZenContext = {
   setFolderId: (folderId?: string | null) => void;
   getFolderId: () => string | null | undefined;
   setAuthorisation: (authorisation?: string | null) => void;
-  uploadingSources: ZenUpload[];
-  upload: (...uploads: ZenUpload[]) => Promise<ZenUpload[]>;
+  uploads: ZenUpload[];
+  upload: (
+    source: ZenStorageSource,
+    options?: ZenStorageUploadOptions,
+  ) => Promise<ZenUpload>;
+  bulkUpload: (...uploads: ZenStorageBulkObject[]) => Promise<ZenUpload[]>;
   cancel: (upload: ZenUpload) => void;
   addListener: (listener: ZenStorageListener) => void;
   removeListener: (listener: ZenStorageListener) => void;
@@ -47,13 +54,13 @@ export type FileZenProviderProps = PropsWithChildren & {
 
 export const FileZenProvider = (props: FileZenProviderProps) => {
   const { apiKey, apiUrl, authorization, children } = props;
-  const [uploading, setUploading] = useState<ZenUpload[]>([]);
   const [projectId, setProjectId] = React.useState<string | null | undefined>(
     null,
   );
   const [folderId, setFolderId] = React.useState<string | null | undefined>(
     null,
   );
+  const [currentUploads, setCurrentUploads] = useState<ZenUpload[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const storage = useMemo(() => {
@@ -62,28 +69,34 @@ export const FileZenProvider = (props: FileZenProviderProps) => {
       apiUrl: apiUrl,
       authorization: authorization,
     });
-  }, [apiKey, apiUrl]);
+  }, [apiKey, apiUrl, authorization]);
 
   const uploadListener = useMemo(() => {
     const listener: ZenUploadListener = {};
     listener.onComplete = (upload: ZenUpload) => {
       upload.removeListener(listener);
-      setUploading((prevState) => prevState.filter((e) => e !== upload));
+      setCurrentUploads((prevState) => prevState.filter((e) => e !== upload));
     };
     return listener;
-  }, [setUploading]);
+  }, [setCurrentUploads]);
 
-  const handleUpload = useCallback((...uploads: ZenUpload[]) => {
-    uploads.forEach((upload) => {
-      upload.addListener(uploadListener);
-    });
-    setUploading((prev) => [...prev, ...uploads]);
-    return Promise.all(
-      uploads.map((upload) => {
-        return upload.upload();
-      }),
-    );
-  }, []);
+  const handleUpload = useCallback(
+    (...data: ZenStorageBulkObject[]) => {
+      const uploads = data.map((source) => {
+        return storage.buildUpload(source.source, source.options);
+      });
+      uploads.forEach((upload) => {
+        upload.addListener(uploadListener);
+      });
+      setCurrentUploads((prev) => [...prev, ...uploads]);
+      return Promise.all(
+        uploads.map((upload) => {
+          return upload.upload();
+        }),
+      );
+    },
+    [storage, uploadListener, setCurrentUploads],
+  );
 
   const handleFileSelect =
     (options?: FileZenProviderPickerOptions) =>
@@ -121,14 +134,17 @@ export const FileZenProvider = (props: FileZenProviderProps) => {
         setAuthorisation: (value) => {
           storage.api.setAuthorization(value);
         },
-        uploadingSources: uploading,
-        upload: (uploads) => {
-          return handleUpload(uploads);
+        uploads: currentUploads,
+        upload: async (source, options) => {
+          return await handleUpload({ source, options }).then((res) => res[0]!);
+        },
+        bulkUpload: async (...uploads: ZenStorageBulkObject[]) => {
+          return handleUpload(...uploads);
         },
         cancel: (upload) => {
           upload.cancel();
           upload.removeListener(uploadListener);
-          setUploading((prev) => prev.filter((i) => i !== upload));
+          setCurrentUploads((prev) => prev.filter((i) => i !== upload));
         },
         addListener: (listener) => {
           storage.addListener(listener);

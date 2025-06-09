@@ -1,4 +1,9 @@
-import { ZenError } from './types';
+import {
+  ZenError,
+  ZenStorageBulkObject,
+  ZenStorageSource,
+  ZenStorageUploadOptions,
+} from './types';
 import { ZenApi, ZenApiOptions } from './ZenApi';
 import { ZenUpload } from './ZenUpload';
 
@@ -36,33 +41,25 @@ export class ZenStorage {
   }
 
   async upload(
-    source: File | Blob | string,
-    options?: {
-      name?: string;
-      folder?: string;
-      folderId?: string;
-    },
+    source: ZenStorageSource,
+    options?: ZenStorageUploadOptions,
   ): Promise<ZenUpload> {
-    let zenUpload: ZenUpload;
-    if (source instanceof File) {
-      zenUpload = this.buildUpload(source, options);
-    } else if (source instanceof Blob) {
-      throw new Error('Blob not implemented');
-    } else {
-      throw new Error('String not implemented');
-    }
+    const zenUpload: ZenUpload = this.buildUpload(source, options);
     await zenUpload.upload();
     return zenUpload;
   }
 
+  async bulkUpload(...uploads: ZenStorageBulkObject[]) {
+    const zenUploads = uploads.map((upload) =>
+      this.buildUpload(upload.source, upload.options),
+    );
+    await Promise.all(zenUploads);
+    return zenUploads;
+  }
+
   buildUpload(
-    source: File | Blob | string,
-    options?: {
-      name?: string;
-      folder?: string;
-      folderId?: string;
-      projectId?: string | null;
-    },
+    source: ZenStorageSource,
+    options?: ZenStorageUploadOptions,
   ): ZenUpload {
     let zenUpload: ZenUpload;
     if (source instanceof File) {

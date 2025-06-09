@@ -60,14 +60,16 @@ export type ZenResult<T> = {
   error?: ZenError;
 };
 
-export type ZenUrlSource = {
-  url: string;
-  name: string;
-  type: string;
+export type ZenStorageSource = File | Blob | string;
+
+export type ZenStorageUploadOptions = {
+  name?: string;
+  folder?: string;
+  folderId?: string;
+  projectId?: string | null;
 };
 
-export type ZenBlobSource = {
-  blob: Blob;
-  name: string;
-  type: string;
+export type ZenStorageBulkObject = {
+  source: ZenStorageSource;
+  options?: ZenStorageUploadOptions;
 };

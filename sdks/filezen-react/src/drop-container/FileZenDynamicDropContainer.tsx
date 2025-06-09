@@ -7,7 +7,7 @@ export const FileZenDynamicDropContainer = dynamic<
   React.ComponentPropsWithoutRef<'div'>
 >(
   () => {
-    return import('./FileZenDropContainer').then(
+    return import('./FileZenDropContainer.js').then(
       (res) => res.FileZenDropContainer,
     );
   },

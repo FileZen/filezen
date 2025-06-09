@@ -10,7 +10,7 @@ This repository includes the following example applications:
 
 ### Apps
 
-- [`nextjs-react`](./apps/nextjs-react/) - Basic Next.js example with FileZen integration
+- [`nextjs-no-router`](./apps/nextjs-no-router/) - Basic Next.js example with FileZen integration
 - [`nextjs-app-router`](./apps/nextjs-app-router/) - Next.js App Router example with API routes
 
 ## Getting Started
