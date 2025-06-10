@@ -89,7 +89,9 @@ export class ZenApi {
       .then((result) => {
         return { data: result.data };
       })
-      .catch(this.handleError);
+      .catch((error) => {
+        return this.handleError(error);
+      });
   }
 
   async listFiles(options?: {
@@ -106,7 +108,9 @@ export class ZenApi {
       .then((result) => {
         return { data: result.data };
       })
-      .catch(this.handleError);
+      .catch((error) => {
+        return this.handleError(error);
+      });
   }
 
   async fileInfo(fileId: string): Promise<ZenResult<ZenFile>> {
@@ -115,7 +119,9 @@ export class ZenApi {
       .then((result) => {
         return { data: result.data };
       })
-      .catch(this.handleError);
+      .catch((error) => {
+        return this.handleError(error);
+      });
   }
 
   async updateFile(
@@ -127,7 +133,9 @@ export class ZenApi {
       .then((result) => {
         return { data: result.data };
       })
-      .catch(this.handleError);
+      .catch((error) => {
+        return this.handleError(error);
+      });
   }
 
   async deleteFile(fileId: string): Promise<ZenResult<boolean>> {
@@ -136,7 +144,9 @@ export class ZenApi {
       .then(() => {
         return { data: true };
       })
-      .catch(this.handleError);
+      .catch((error) => {
+        return this.handleError(error);
+      });
   }
 
   async deleteFileByUrl(url: string): Promise<ZenResult<boolean>> {
@@ -149,7 +159,9 @@ export class ZenApi {
       .then(() => {
         return { data: true };
       })
-      .catch(this.handleError);
+      .catch((error) => {
+        return this.handleError(error);
+      });
   }
 
   private handleError(error: any): ZenResult<any> {
