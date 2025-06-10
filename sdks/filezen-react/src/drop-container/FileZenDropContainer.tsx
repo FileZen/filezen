@@ -1,14 +1,17 @@
 'use client';
 
-import { FileZenContext } from '../index';
+import { ZenStorageBulkItem } from '@filezen/js';
 import * as React from 'react';
 import { DragEvent, useContext, useState } from 'react';
+import { FileZenContext } from '../index';
 
-type AppGlobalDropContainerProps = React.ComponentPropsWithoutRef<'div'>;
+type AppGlobalDropContainerProps = React.ComponentPropsWithoutRef<'div'> & {
+  children: React.ReactElement | ((isDraggedOver: boolean) => React.ReactNode);
+};
 
 export const FileZenDropContainer = (props: AppGlobalDropContainerProps) => {
   const { children, className } = props;
-  const { storage, upload } = useContext(FileZenContext);
+  const { bulkUpload } = useContext(FileZenContext);
   const [isDraggedOver, setDraggedOver] = useState(false);
   const handleDrop = (event: DragEvent<any>) => {
     event.preventDefault();
@@ -29,11 +32,10 @@ export const FileZenDropContainer = (props: AppGlobalDropContainerProps) => {
         files.push(file);
       });
     }
-    upload(
-      ...files.map((file) => {
-        return storage.buildUpload(file);
-      }),
-    );
+    const bulkObjects: ZenStorageBulkItem[] = files.map((file) => {
+      return { source: file };
+    });
+    bulkUpload(...bulkObjects);
   };
   return (
     <div
@@ -53,16 +55,11 @@ export const FileZenDropContainer = (props: AppGlobalDropContainerProps) => {
         setDraggedOver(false);
       }}
     >
-      {isDraggedOver && (
-        <div
-          className={
-            'absolute top-0 left-0 z-10 h-full w-full bg-white/90 p-12'
-          }
-        >
-          <div className={'h-full w-full rounded-lg border-2 border-dashed'} />
-        </div>
-      )}
-      {children}
+      {typeof children === 'function' 
+        ? children(isDraggedOver)
+        : React.isValidElement(children)
+        ? React.cloneElement(children, { isDraggedOver } as any)
+        : children}
     </div>
   );
 };

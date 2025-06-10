@@ -69,7 +69,7 @@ export type ZenStorageUploadOptions = {
   projectId?: string | null;
 };
 
-export type ZenStorageBulkObject = {
+export type ZenStorageBulkItem = {
   source: ZenStorageSource;
   options?: ZenStorageUploadOptions;
 };

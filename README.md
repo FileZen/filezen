@@ -12,6 +12,7 @@ This repository includes the following example applications:
 
 - [`nextjs-no-router`](./apps/nextjs-no-router/) - Basic Next.js example with FileZen integration
 - [`nextjs-app-router`](./apps/nextjs-app-router/) - Next.js App Router example with API routes
+- [`react-with-provider`](./apps/react-with-provider/) - Comprehensive example demonstrating the @filezen/react SDK with FileZenProvider
 
 ## Getting Started
 

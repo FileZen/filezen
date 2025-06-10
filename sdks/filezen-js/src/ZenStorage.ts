@@ -1,6 +1,6 @@
 import {
   ZenError,
-  ZenStorageBulkObject,
+  ZenStorageBulkItem,
   ZenStorageSource,
   ZenStorageUploadOptions,
 } from './types';
@@ -40,6 +40,12 @@ export class ZenStorage {
     return this.uploads.values();
   }
 
+  get activeUploads() {
+    return Array.from(this.uploads.values()).filter(
+      (upload) => !upload.error && !upload.isCompleted,
+    );
+  }
+
   async upload(
     source: ZenStorageSource,
     options?: ZenStorageUploadOptions,
@@ -49,7 +55,7 @@ export class ZenStorage {
     return zenUpload;
   }
 
-  async bulkUpload(...uploads: ZenStorageBulkObject[]) {
+  async bulkUpload(...uploads: ZenStorageBulkItem[]) {
     const zenUploads = uploads.map((upload) =>
       this.buildUpload(upload.source, upload.options),
     );

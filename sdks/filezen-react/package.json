@@ -6,6 +6,9 @@
     "./*": "./src/*.tsx"
   },
   "scripts": {
+    "prebuild": "rimraf dist",
+    "build": "npx tsc --build",
+    "clean": "rimraf dist",
     "lint": "node_modules/.bin/eslint . --max-warnings 0",
     "generate:component": "turbo gen react-component",
     "check-types": "node_modules/.bin/tsc --noEmit"
