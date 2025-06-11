@@ -16,7 +16,7 @@ export class ZenUpload {
   private listeners: ZenUploadListener[] = [];
   private abortController?: AbortController;
 
-  private _progress: number = 0;
+  private _progressPercent: number = 0;
   private _error: ZenError | null | undefined;
   private _isCompleted: boolean = false;
   private _file: ZenFile | null = null;
@@ -70,15 +70,15 @@ export class ZenUpload {
     });
   }
 
-  set progress(progress: number) {
-    this._progress = progress;
+  set progressPercent(progress: number) {
+    this._progressPercent = progress;
     this.listeners.forEach((listener: ZenUploadListener) => {
       listener.onProgress?.(this, progress);
     });
   }
 
-  get progress() {
-    return this._progress;
+  get progressPercent() {
+    return this._progressPercent;
   }
 
   set error(error: ZenError | null | undefined) {
@@ -125,11 +125,10 @@ export class ZenUpload {
       projectId: this.projectId,
       folderId: this.folderId,
       abortController: controller,
-      onUploadProgress: (axiosProgress) => {
-        const progress = axiosProgress.progress ?? axiosProgress.bytes;
-        this.progress = progress;
+      onUploadProgress: (percent) => {
+        this.progressPercent = percent;
         this.listeners.forEach((listener) => {
-          listener.onProgress?.(this, progress);
+          listener.onProgress?.(this, percent);
         });
       },
     });

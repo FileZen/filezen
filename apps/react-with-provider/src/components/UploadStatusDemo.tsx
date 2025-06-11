@@ -10,8 +10,6 @@ export function UploadStatusDemo() {
     {},
   );
 
-  console.log('uploads', uploads);
-
   useEffect(() => {
     // Set up progress listeners for all uploads
     const listeners = uploads.map((upload) => {
