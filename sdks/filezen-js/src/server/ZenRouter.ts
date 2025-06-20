@@ -3,7 +3,7 @@ import { ZenApi } from '../ZenApi';
 import { ZenSigner } from './ZenSigner';
 
 export type CreateZenRouterOptions<Request, Response> = {
-  buildResponse: (data: any) => Response;
+  buildResponse: (data: object) => Response;
   formDataFromRequest: (request: Request) => Promise<FormData>;
   searchParameterFromRequest: (request: Request) => URLSearchParams;
 };

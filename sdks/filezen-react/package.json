@@ -19,5 +19,8 @@
     "@types/node": "^22.15.3",
     "eslint": "^9.26.0",
     "typescript": "5.8.2"
+  },
+  "peerDependencies": {
+    "@filezen/js": "workspace:*"
   }
 }

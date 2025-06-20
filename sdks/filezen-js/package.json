@@ -9,14 +9,11 @@
   "scripts": {
     "prebuild": "rimraf dist",
     "build": "npx tsc --build",
-    "clean": "rimraf dist",
-    "lint": "node_modules/.bin/eslint . --max-warnings 0",
-    "check-types": "node_modules/.bin/tsc --noEmit"
+    "clean": "rimraf dist"
   },
   "devDependencies": {
     "@repo/eslint-config": "*",
     "@repo/typescript-config": "*",
-    "@turbo/gen": "^2.5.0",
     "@types/node": "^22.15.3",
     "eslint": "^9.26.0",
     "typescript": "5.8.2"

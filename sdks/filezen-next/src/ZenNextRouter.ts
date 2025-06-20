@@ -4,9 +4,10 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export const createZenNextRouter = (api: ZenApi) => {
   const router = createZenRouter<NextRequest, NextResponse>(api, {
-    buildResponse: (data) => NextResponse.json(data),
-    formDataFromRequest: (request) => request.formData(),
-    searchParameterFromRequest: (request) => request.nextUrl.searchParams,
+    buildResponse: (data: object) => NextResponse.json(data),
+    formDataFromRequest: (request: NextRequest) => request.formData(),
+    searchParameterFromRequest: (request: NextRequest) =>
+      request.nextUrl.searchParams,
   });
   return {
     POST: router.postMethodsHandler,
