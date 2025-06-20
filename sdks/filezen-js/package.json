@@ -1,7 +1,10 @@
 {
   "name": "@filezen/js",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "private": true,
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
   "exports": {
     "./*": "./src/*.ts",
     "./server": "./src/server/*.ts"
