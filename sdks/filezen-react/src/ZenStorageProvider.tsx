@@ -4,7 +4,7 @@ import {
   ZenStorage,
   ZenStorageBulkItem,
   ZenStorageListener,
-  ZenStorageSource,
+  ZenUploadSource,
   ZenStorageUploadOptions,
   ZenUpload,
   ZenUploadListener,
@@ -37,7 +37,7 @@ export interface IFileZenContext {
 
   activeUploads: ZenUpload[];
   upload: (
-    source: ZenStorageSource,
+    source: ZenUploadSource,
     options?: ZenStorageUploadOptions,
   ) => Promise<ZenUpload>;
   bulkUpload: (...uploads: ZenStorageBulkItem[]) => Promise<ZenUpload[]>;

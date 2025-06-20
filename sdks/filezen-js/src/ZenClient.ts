@@ -2,8 +2,8 @@ import axios from 'axios';
 import { DEFAULT_SIGN_URL } from './constants';
 import {
   ZenStorageBulkItem,
-  ZenStorageSource,
   ZenStorageUploadOptions,
+  ZenUploadSource,
 } from './types';
 import { ZenError } from './ZenError';
 import {
@@ -61,7 +61,7 @@ export class ZenClient {
   }
 
   async upload(
-    source: ZenStorageSource,
+    source: ZenUploadSource,
     options?: ZenStorageUploadOptions,
   ): Promise<ZenUpload> {
     const zenUpload: ZenUpload = this.buildUpload(source, options);
@@ -78,21 +78,10 @@ export class ZenClient {
   }
 
   buildUpload(
-    source: ZenStorageSource,
+    source: ZenUploadSource,
     options?: ZenStorageUploadOptions,
   ): ZenUpload {
-    let zenUpload: ZenUpload;
-    if (source instanceof File) {
-      zenUpload = ZenUpload.fromFile(this.uploader, source, {
-        folder: options?.folder,
-        folderId: options?.folderId,
-        projectId: options?.projectId,
-      });
-    } else if (source instanceof Blob) {
-      throw new Error('Blob not implemented');
-    } else {
-      throw new Error('String not implemented');
-    }
+    const zenUpload: ZenUpload = this.uploader.buildUpload(source, options);
     this.uploads.set(zenUpload.localId, zenUpload);
     this.listeners.forEach((listener: ZenClientListener) => {
       listener.onUploadsChange?.(this.uploads.values());

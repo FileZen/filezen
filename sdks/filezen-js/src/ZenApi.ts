@@ -1,6 +1,6 @@
 import axios, { AxiosInstance } from 'axios';
 import { DEFAULT_API_URL } from './constants';
-import { ZenFile, ZenList, ZenStorageSource, ZenUploaderParams } from './types';
+import { ZenFile, ZenList, ZenUploadSource, ZenUploaderParams } from './types';
 import {
   buildZenErrorResult,
   buildZenSuccessResult,
@@ -49,7 +49,7 @@ export class ZenApi {
   }
 
   async uploadFile(
-    source: ZenStorageSource,
+    source: ZenUploadSource,
     params: ZenUploaderParams,
   ): Promise<ZenResult<ZenFile>> {
     return this.uploader.uploadFile(source, params);

@@ -1,11 +1,18 @@
 import axios, { AxiosProgressEvent } from 'axios';
 import { MULTIPART_CHUNK_SIZE, MULTIPART_THRESHOLD } from './constants';
-import { ZenFile, ZenStorageSource, ZenUploaderParams } from './types';
+import {
+  ZenFile,
+  ZenStorageSource,
+  ZenStorageUploadOptions,
+  ZenUploaderParams,
+  ZenUploadSource,
+} from './types';
 import {
   buildZenErrorResult,
   buildZenSuccessResult,
   ZenResult,
 } from './ZenResult';
+import { ZenUpload } from './ZenUpload';
 
 export type ZenUploaderOptions = {
   url?: string;
@@ -16,8 +23,47 @@ export type ZenUploaderOptions = {
 export class ZenUploader {
   constructor(readonly options: ZenUploaderOptions) {}
 
-  async uploadFile(
+  buildUpload(
     source: ZenStorageSource,
+    options?: ZenStorageUploadOptions,
+  ): ZenUpload {
+    let zenUpload: ZenUpload;
+    if (source instanceof File) {
+      zenUpload = ZenUpload.fromFile(this, source, {
+        folder: options?.folder,
+        folderId: options?.folderId,
+        projectId: options?.projectId,
+      });
+    } else if (Buffer.isBuffer(source)) {
+      if (!options?.name) {
+        throw new Error('`name` is required for Buffer uploads');
+      }
+      zenUpload = ZenUpload.fromBuffer(this, source, {
+        name: options.name,
+        mimeType: options.mimeType,
+        folder: options.folder,
+        folderId: options.folderId,
+        projectId: options.projectId,
+      });
+    } else if (source instanceof Blob) {
+      if (!options?.name) {
+        throw new Error('`name` is required for Buffer uploads');
+      }
+      zenUpload = ZenUpload.fromBlob(this, source, {
+        name: options.name,
+        mimeType: options.mimeType,
+        folder: options.folder,
+        folderId: options.folderId,
+        projectId: options.projectId,
+      });
+    } else {
+      throw new Error('String not implemented');
+    }
+    return zenUpload;
+  }
+
+  async uploadFile(
+    source: ZenUploadSource,
     params: ZenUploaderParams,
   ): Promise<ZenResult<ZenFile>> {
     try {
@@ -74,11 +120,11 @@ export class ZenUploader {
   }
 
   private async regularUpload(
-    source: ZenStorageSource,
+    source: ZenUploadSource,
     params: ZenUploaderParams,
   ): Promise<ZenResult<ZenFile>> {
     const formData = new FormData();
-    formData.append('file', source);
+    formData.append('file', source as any, params.name);
     if (params.name) {
       formData.append('name', params.name);
     }
@@ -199,7 +245,7 @@ export class ZenUploader {
     };
   }
 
-  private resolveFileInfo(source: ZenStorageSource, params: ZenUploaderParams) {
+  private resolveFileInfo(source: ZenUploadSource, params: ZenUploaderParams) {
     return {
       name:
         params.name ||

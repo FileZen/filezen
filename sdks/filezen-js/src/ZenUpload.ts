@@ -45,11 +45,65 @@ export class ZenUpload {
     );
   }
 
+  static fromBlob(
+    uploader: ZenUploader,
+    source: Blob,
+    options: {
+      name: string;
+      mimeType?: string;
+      folder?: string | null;
+      folderId?: string | null;
+      projectId?: string | null;
+    },
+  ): ZenUpload {
+    const fileName = options.folder
+      ? `${options.folder}/${options.name}`
+      : options.name;
+    return new ZenUpload(
+      uploader,
+      fileName,
+      options.mimeType ?? 'application/octet-stream',
+      new Blob([source], {
+        type: options.mimeType ?? 'application/octet-stream',
+      }),
+      undefined,
+      options.projectId,
+      options.folderId,
+    );
+  }
+
+  static fromBuffer(
+    uploader: ZenUploader,
+    source: Buffer,
+    options: {
+      name: string;
+      mimeType?: string;
+      folder?: string | null;
+      folderId?: string | null;
+      projectId?: string | null;
+    },
+  ): ZenUpload {
+    const fileName = options.folder
+      ? `${options.folder}/${options.name}`
+      : options.name;
+    return new ZenUpload(
+      uploader,
+      fileName,
+      options.mimeType ?? 'application/octet-stream',
+      new Blob([source], {
+        type: options.mimeType ?? 'application/octet-stream',
+      }),
+      undefined,
+      options.projectId,
+      options.folderId,
+    );
+  }
+
   constructor(
     readonly uploader: ZenUploader,
     readonly name: string,
     readonly type: string,
-    readonly source: string | File | Blob,
+    readonly source: File | Blob | string,
     readonly metadata?: ZenMetadata,
     readonly projectId?: string | null,
     readonly folderId?: string | null,

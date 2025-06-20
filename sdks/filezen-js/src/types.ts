@@ -48,17 +48,20 @@ export type ZenList = {
   total: number;
 };
 
-export type ZenStorageSource = File | Blob | string;
+export type ZenStorageSource = File | Blob | Buffer | string;
+
+export type ZenUploadSource = File | Blob | string;
 
 export type ZenStorageUploadOptions = {
   name?: string;
   folder?: string;
   folderId?: string;
   projectId?: string | null;
+  mimeType?: string;
 };
 
 export type ZenStorageBulkItem = {
-  source: ZenStorageSource;
+  source: ZenUploadSource;
   options?: ZenStorageUploadOptions;
 };
 

@@ -7,7 +7,13 @@ import { ZenApi, ZenApiOptions } from './ZenApi';
 import { ZenError } from './ZenError';
 import { ZenUpload } from './ZenUpload';
 
-export type ZenStorageOptions = ZenApiOptions & {};
+export type ZenStorageOptions = ZenApiOptions & {
+  /**
+   * Whether to keep track of uploads in the uploads list
+   * @default true
+   */
+  keepUploads?: boolean;
+};
 
 export type ZenStorageListener = {
   onUploadStart?: (file: ZenUpload) => void;
@@ -67,22 +73,16 @@ export class ZenStorage {
     source: ZenStorageSource,
     options?: ZenStorageUploadOptions,
   ): ZenUpload {
-    let zenUpload: ZenUpload;
-    if (source instanceof File) {
-      zenUpload = ZenUpload.fromFile(this.api.uploader, source, {
-        folder: options?.folder,
-        folderId: options?.folderId,
-        projectId: options?.projectId,
+    const zenUpload: ZenUpload = this.api.uploader.buildUpload(source, options);
+
+    // Only store uploads if keepUploads is true (default) or not explicitly set to false
+    if (this.options.keepUploads !== false) {
+      this.uploads.set(zenUpload.localId, zenUpload);
+      this.listeners.forEach((listener: ZenStorageListener) => {
+        listener.onUploadsChange?.(this.uploads.values());
       });
-    } else if (source instanceof Blob) {
-      throw new Error('Blob not implemented');
-    } else {
-      throw new Error('String not implemented');
     }
-    this.uploads.set(zenUpload.localId, zenUpload);
-    this.listeners.forEach((listener: ZenStorageListener) => {
-      listener.onUploadsChange?.(this.uploads.values());
-    });
+
     zenUpload.addListener({
       onStart: (upload) => {
         this.listeners.forEach((l) => l.onUploadStart?.(upload));
@@ -98,7 +98,10 @@ export class ZenStorage {
       },
       onCancel: (upload) => {
         this.listeners.forEach((l) => l.onUploadCancel?.(upload));
-        if (this.uploads.has(upload.localId)) {
+        if (
+          this.options.keepUploads !== false &&
+          this.uploads.has(upload.localId)
+        ) {
           this.uploads.delete(upload.localId);
           this.listeners.forEach((l) => {
             l.onUploadsChange?.(this.uploads.values());
