@@ -48,9 +48,6 @@ jobs:
             fi
           done
 
-      - name: Build packages
-        run: yarn build
-
       - name: Publish Packages
         run: |
           CHANGED_PACKAGES=()
@@ -79,6 +76,9 @@ jobs:
           for PACKAGE_DIR in "${CHANGED_PACKAGES[@]}"; do
             echo "Publishing $PACKAGE_DIR..."
             cd "$PACKAGE_DIR" || exit
+          
+            # Build the package
+            yarn build
             
             if [ "${{ github.event.inputs.dry_run }}" == "true" ]; then
               echo "DRY RUN: Would publish $(basename "$PACKAGE_DIR")"
