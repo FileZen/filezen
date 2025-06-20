@@ -1,0 +1,94 @@
+name: Publish SDK Packages to NPM
+
+on:
+  push:
+    branches: [main]
+    paths: ['sdks/**']
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (do not actually publish)'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: "Remove private: true from package.json"
+        run: |
+          for PACKAGE_DIR in sdks/*/; do
+            if [ -f "$PACKAGE_DIR/package.json" ]; then
+              echo "Removing 'private' flag in $PACKAGE_DIR..."
+              cd "$PACKAGE_DIR" || exit
+              # Remove "private": true (even if indented)
+              sed -i '/"private": true/d' package.json
+              cd - || exit
+            fi
+          done
+
+      - name: Build packages
+        run: yarn build
+
+      - name: Publish Packages
+        run: |
+          CHANGED_PACKAGES=()
+          
+          for PACKAGE_DIR in sdks/*/; do
+            if [ -f "$PACKAGE_DIR/package.json" ]; then
+              cd "$PACKAGE_DIR" || exit
+              PKG_NAME=$(node -p "require('./package.json').name")
+              LOCAL_VERSION=$(node -p "require('./package.json').version")
+        
+              # Fetch latest published version
+              LATEST_VERSION=$(npm view $PKG_NAME version 2>/dev/null || echo "0.0.0")
+        
+              # Compare versions
+              if [ "$(printf '%s\n' "$LATEST_VERSION" "$LOCAL_VERSION" | sort -V | head -n1)" != "$LOCAL_VERSION" ]; then
+                echo "Version changed for $PKG_NAME: $LATEST_VERSION -> $LOCAL_VERSION"
+                CHANGED_PACKAGES+=("$PACKAGE_DIR")
+              else
+                echo "No version change for $PKG_NAME (current: $LOCAL_VERSION)"
+              fi
+              cd - || exit
+            fi
+          done
+          
+          # Publish only changed packages
+          for PACKAGE_DIR in "${CHANGED_PACKAGES[@]}"; do
+            echo "Publishing $PACKAGE_DIR..."
+            cd "$PACKAGE_DIR" || exit
+            
+            if [ "${{ github.event.inputs.dry_run }}" == "true" ]; then
+              echo "DRY RUN: Would publish $(basename "$PACKAGE_DIR")"
+              npm publish --dry-run --access public
+            else
+              echo "Publishing $(basename "$PACKAGE_DIR")..."
+              npm publish --access public
+            fi
+            
+            cd - || exit
+          done
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} 
