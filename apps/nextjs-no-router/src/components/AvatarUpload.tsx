@@ -1,12 +1,11 @@
 'use client';
 
 import { ZenError, ZenFile, ZenStorage } from '@filezen/js';
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { useDropzone } from 'react-dropzone';
 
-const fileZen = new ZenStorage();
-
 export const AvatarUpload = () => {
+  const zenStorage = useMemo(() => new ZenStorage(), []);
   const [isUploading, setIsUploading] = React.useState(false);
   const [error, setError] = React.useState<ZenError | null>(null);
   const [uploadResult, setUploadResult] = React.useState<ZenFile | null>(null);
@@ -15,12 +14,12 @@ export const AvatarUpload = () => {
     setError(null);
     setIsUploading(true);
     try {
-      const result = await fileZen.upload(file);
+      const result = await zenStorage.upload(file);
       if (result.error) {
         setError(result.error);
       } else {
         if (uploadResult) {
-          fileZen.deleteByUrl(uploadResult.cdnUrl!).then((res) => {
+          zenStorage.deleteByUrl(uploadResult.url!).then((res) => {
             console.log(`File deleted by url: `, res.data);
           });
         }
@@ -66,7 +65,7 @@ export const AvatarUpload = () => {
           {uploadResult ? (
             <div className="group relative">
               <img
-                src={uploadResult.cdnUrl}
+                src={uploadResult.url}
                 alt="Profile"
                 className="mx-auto h-32 w-32 rounded-full object-cover ring-2 ring-gray-700"
               />

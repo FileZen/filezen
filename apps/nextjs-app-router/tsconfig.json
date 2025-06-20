@@ -1,7 +1,11 @@
 {
   "compilerOptions": {
     "target": "ES2017",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -19,11 +23,30 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"],
-      "@filezen/js": ["../../sdks/filezen-js/src"],
-      "@filezen/react": ["../../sdks/filezen-react/src"]
+      "@/*": [
+        "./src/*"
+      ],
+      "@filezen/js": [
+        "../../sdks/filezen-js/src"
+      ],
+      "@filezen/js/server": [
+        "../../sdks/filezen-js/src/server"
+      ],
+      "@filezen/next": [
+        "../../sdks/filezen-next/src"
+      ],
+      "@filezen/react": [
+        "../../sdks/filezen-react/src"
+      ]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules"]
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }

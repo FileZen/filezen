@@ -33,7 +33,6 @@ export type ZenFile = {
   size: number;
   region: string;
   url?: string;
-  cdnUrl?: string;
   projectId: string;
   project: ZenProject;
   parentId?: string;
@@ -49,17 +48,6 @@ export type ZenList = {
   total: number;
 };
 
-export type ZenError = {
-  code: number;
-  message: string;
-  cause?: any;
-};
-
-export type ZenResult<T> = {
-  data?: T;
-  error?: ZenError;
-};
-
 export type ZenStorageSource = File | Blob | string;
 
 export type ZenStorageUploadOptions = {
@@ -72,4 +60,15 @@ export type ZenStorageUploadOptions = {
 export type ZenStorageBulkItem = {
   source: ZenStorageSource;
   options?: ZenStorageUploadOptions;
+};
+
+export type ZenUploaderParams = {
+  name?: string;
+  size?: number;
+  mimeType?: string;
+  metadata?: ZenMetadata;
+  projectId?: string | null;
+  folderId?: string | null;
+  abortController?: AbortController;
+  onUploadProgress?: (percent: number) => void;
 };

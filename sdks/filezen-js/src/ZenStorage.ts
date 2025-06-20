@@ -1,10 +1,10 @@
 import {
-  ZenError,
   ZenStorageBulkItem,
   ZenStorageSource,
   ZenStorageUploadOptions,
 } from './types';
 import { ZenApi, ZenApiOptions } from './ZenApi';
+import { ZenError } from './ZenError';
 import { ZenUpload } from './ZenUpload';
 
 export type ZenStorageOptions = ZenApiOptions & {};
@@ -69,7 +69,7 @@ export class ZenStorage {
   ): ZenUpload {
     let zenUpload: ZenUpload;
     if (source instanceof File) {
-      zenUpload = ZenUpload.fromFile(this, source, {
+      zenUpload = ZenUpload.fromFile(this.api.uploader, source, {
         folder: options?.folder,
         folderId: options?.folderId,
         projectId: options?.projectId,

@@ -1,6 +1,6 @@
+import { ZenStorageProvider } from '@filezen/react';
 import type { Metadata } from 'next';
 import './globals.css';
-import { FileZenProvider } from '@filezen/react';
 
 export const metadata: Metadata = {
   title: 'FileZen React SDK Example',
@@ -15,14 +15,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased">
-        <FileZenProvider
-          apiKey={process.env.NEXT_PUBLIC_FILEZEN_API_KEY}
-          apiUrl={process.env.NEXT_PUBLIC_FILEZEN_API_URL}
-          authorization={process.env.NEXT_PUBLIC_FILEZEN_AUTHORIZATION}
-        >
-          {children}
-        </FileZenProvider>
+        <ZenStorageProvider>{children}</ZenStorageProvider>
       </body>
     </html>
   );
-} 
+}

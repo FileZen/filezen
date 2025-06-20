@@ -1,10 +1,12 @@
 'use client';
 
 import { ZenError, ZenFile } from '@filezen/js';
+import { useZenClient } from '@filezen/react';
 import React, { useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 
 export const FileUpload = () => {
+  const zenClient = useZenClient();
   const [isUploading, setIsUploading] = React.useState(false);
   const [error, setError] = React.useState<ZenError | null>(null);
   const [uploadResult, setUploadResult] = React.useState<ZenFile | null>(null);
@@ -13,23 +15,25 @@ export const FileUpload = () => {
     setError(null);
     setIsUploading(true);
 
-    const formData = new FormData();
-    formData.append('file', file);
+    const result = await zenClient.upload(file);
 
-    const response = await fetch('/api/upload', {
-      method: 'POST',
-      body: formData,
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      setError(data.error);
+    if (result.error) {
+      setError(result.error);
       setIsUploading(false);
       return;
     }
 
-    setUploadResult(data.file);
+    if (uploadResult) {
+      zenClient.delete(uploadResult.id).then((result) => {
+        if (result.error) {
+          console.error('Previous file delete failed: ', result.error);
+        } else {
+          console.log('Previous file deleted!');
+        }
+      });
+    }
+
+    setUploadResult(result.file);
     setIsUploading(false);
   };
 
@@ -66,7 +70,7 @@ export const FileUpload = () => {
           {uploadResult ? (
             <div className="group relative">
               <img
-                src={uploadResult.cdnUrl}
+                src={uploadResult.url}
                 alt="Profile"
                 className="mx-auto h-32 w-32 rounded-full object-cover ring-2 ring-gray-700"
               />

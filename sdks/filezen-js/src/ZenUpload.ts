@@ -1,6 +1,7 @@
 import { v4 } from 'uuid';
-import { ZenError, ZenFile, ZenMetadata } from './types';
-import { ZenStorage } from './ZenStorage';
+import { ZenFile, ZenMetadata } from './types';
+import { ZenError } from './ZenError';
+import { ZenUploader } from './ZenUploader';
 
 export interface ZenUploadListener {
   onStart?: (upload: ZenUpload) => void;
@@ -22,7 +23,7 @@ export class ZenUpload {
   private _file: ZenFile | null = null;
 
   static fromFile(
-    storage: ZenStorage,
+    uploader: ZenUploader,
     file: File,
     options?: {
       folder?: string | null;
@@ -34,7 +35,7 @@ export class ZenUpload {
       ? `${options.folder}/${file.name}`
       : file.name;
     return new ZenUpload(
-      storage,
+      uploader,
       fileName,
       file.type,
       file,
@@ -45,7 +46,7 @@ export class ZenUpload {
   }
 
   constructor(
-    readonly storage: ZenStorage,
+    readonly uploader: ZenUploader,
     readonly name: string,
     readonly type: string,
     readonly source: string | File | Blob,
@@ -118,7 +119,7 @@ export class ZenUpload {
     this.error = null;
     this.notifyStart();
 
-    const result = await this.storage.api.uploadFile(this.source, {
+    const result = await this.uploader.uploadFile(this.source, {
       name: this.name,
       mimeType: this.type,
       metadata: this.metadata,
