@@ -1,13 +1,19 @@
 {
   "name": "@filezen/js",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "private": true,
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
   "exports": {
-    "./*": "./src/*.ts",
-    "./server": "./src/server/*.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./server": {
+      "types": "./dist/server/index.d.ts",
+      "default": "./dist/server/index.js"
+    }
   },
   "scripts": {
     "prebuild": "rimraf dist",

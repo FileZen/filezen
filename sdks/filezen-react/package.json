@@ -1,12 +1,15 @@
 {
   "name": "@filezen/react",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "private": true,
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
   "exports": {
-    "./*": "./src/*.tsx"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
   },
   "scripts": {
     "prebuild": "rimraf dist",
