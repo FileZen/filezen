@@ -1,4 +1,4 @@
-"use client";
+'use client';
 import { ZenClient, ZenClientOptions } from '@filezen/js';
 import React, { createContext, useContext, useMemo } from 'react';
 
@@ -10,16 +10,16 @@ const ZenClientContext = createContext<ZenClientContextType | undefined>(
   undefined,
 );
 
-type ZenClientProviderProps = {
+type ZenClientProviderProps = Partial<ZenClientOptions> & {
   children: React.ReactNode;
-  options?: ZenClientOptions;
 };
 
 export const ZenClientProvider = ({
   children,
-  options,
+  url,
+  signUrl,
 }: ZenClientProviderProps) => {
-  const client = useMemo(() => new ZenClient(options), [options]);
+  const client = useMemo(() => new ZenClient({ url, signUrl }), [url, signUrl]);
 
   return (
     <ZenClientContext.Provider value={{ client }}>

@@ -25,21 +25,23 @@ export type ZenClientListener = {
 
 export type ZenClientOptions = {
   url?: string;
-  signUrl: string;
+  signUrl?: string;
 };
 
 export class ZenClient {
+  private readonly options: ZenClientOptions;
   private readonly uploader: ZenUploader;
 
   private listeners: ZenClientListener[] = [];
   private uploads: Map<string, ZenUpload> = new Map<string, ZenUpload>();
 
-  constructor(
-    private readonly options: ZenClientOptions = {
+  constructor(options?: ZenClientOptions) {
+    const resolvedOptions: ZenClientOptions = {
       signUrl: DEFAULT_SIGN_URL,
-    },
-  ) {
-    this.uploader = new ZenUploader(options);
+      ...options,
+    };
+    this.options = resolvedOptions;
+    this.uploader = new ZenUploader(resolvedOptions);
   }
 
   addListener(listener: ZenClientListener) {
@@ -114,7 +116,7 @@ export class ZenClient {
 
   async delete(urlOrId: string): Promise<ZenResult<boolean>> {
     return await axios
-      .delete<{ success: boolean }>(this.options.signUrl, {
+      .delete<{ success: boolean }>(this.options.signUrl!, {
         params: {
           urlOrId: urlOrId,
         },

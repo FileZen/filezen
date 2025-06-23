@@ -21,9 +21,30 @@ pnpm add @filezen/js @filezen/react
 
 ### `ZenClientProvider` and `useZenClient`
 
-The `ZenClientProvider` creates a `ZenClient` instance and provides it to all child components via the `useZenClient` hook. This provider is intended for applications that have a corresponding server-side implementation to handle file uploads.
+The `ZenClientProvider` creates a `ZenClient` instance and provides it to all child components via the `useZenClient` hook. This provider is intended for applications that have a corresponding server-side implementation to handle file uploads and signing.
 
-> **Important:** The `ZenClientProvider` is designed for client-side usage and requires a backend to handle the actual upload logic and authentication. For example, when using Next.js, the `@filezen/next` package provides the necessary server-side routes. Without a backend implementation, the client will not be able to upload files.
+> **Important:** The `ZenClientProvider` requires a backend to handle the upload signing logic. The `signUrl` prop should point to the API endpoint that can provide a signed URL for uploading. For Next.js, the `@filezen/next` package handles this automatically if you do not provide a `signUrl`.
+
+**Provider Setup**
+```tsx
+import { ZenClientProvider } from '@filezen/react';
+
+function App() {
+  return (
+    // If signUrl is not provided, it defaults to '/api/upload'
+    <ZenClientProvider>
+      {/* Your app components */}
+    </ZenClientProvider>
+  );
+}
+```
+
+Or, with a custom signing endpoint:
+```tsx
+<ZenClientProvider signUrl="/api/my-custom-signer">
+  {/* ... */}
+</ZenClientProvider>
+```
 
 **`src/app/layout.tsx`**
 ```typescript
