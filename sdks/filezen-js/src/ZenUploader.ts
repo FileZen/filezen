@@ -72,7 +72,7 @@ export class ZenUploader {
         typeof source === 'string' ||
         (source instanceof Blob && source.size <= MULTIPART_THRESHOLD)
       ) {
-        return this.regularUpload(source, params);
+        return await this.regularUpload(source, params);
       }
 
       // For large files, use multipart upload

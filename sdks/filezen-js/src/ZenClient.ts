@@ -37,8 +37,8 @@ export class ZenClient {
 
   constructor(options?: ZenClientOptions) {
     const resolvedOptions: ZenClientOptions = {
-      signUrl: DEFAULT_SIGN_URL,
       ...options,
+      signUrl: options?.signUrl ?? DEFAULT_SIGN_URL,
     };
     this.options = resolvedOptions;
     this.uploader = new ZenUploader(resolvedOptions);

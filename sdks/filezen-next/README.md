@@ -36,7 +36,40 @@ const zenApi = new ZenApi();
 export const { POST, DELETE } = createZenNextRouter(zenApi);
 ```
 
-### 2. Add the Provider
+### 2. Request Validation Middleware (Optional)
+
+You can add request validation middleware to verify requests before generating signed URLs for file uploads. This is useful for implementing authentication, authorization, or other custom validation logic.
+
+**`src/app/api/upload/route.ts`**
+```typescript
+import { ZenApi, ZenError } from '@filezen/js';
+import { createZenNextRouter } from '@filezen/next';
+import { NextRequest } from 'next/server';
+
+const zenApi = new ZenApi();
+
+const requestMiddleware = async (request: NextRequest) => {
+  /**
+   * Here you can verify request, e.g - check user authentication:
+   * const user = await getUserFromRequest(request);
+   * if (!user) {
+   *    throw new ZenError(401, 'Unauthorized');
+   * }
+   * return { userId: user.id }
+   */
+};
+
+export const { POST, DELETE } = createZenNextRouter(zenApi, {
+  onRequest: requestMiddleware,
+});
+```
+
+The middleware function can:
+- Return additional metadata that will be available in the request context
+- Throw a `ZenError` to reject the request with a specific status code and message
+- Return `void` or `undefined` if no additional processing is needed
+
+### 3. Add the Provider
 
 Wrap your application with the `ZenClientProvider` from `@filezen/react`. This will provide the `ZenClient` instance to all child components.
 
@@ -55,7 +88,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 }
 ```
 
-### 3. Implement the Client-side Upload
+### 4. Implement the Client-side Upload
 
 Use the `useZenClient` hook from `@filezen/react` to create a file upload component.
 
