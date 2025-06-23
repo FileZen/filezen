@@ -8,7 +8,6 @@ const Footer = () => {
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: '24px 16px',
-    borderTop: '1px solid',
     backgroundColor: 'var(--nextra-bg)',
     color: 'var(--nextra-fg)',
     flexWrap: 'wrap' as const,
@@ -18,7 +17,7 @@ const Footer = () => {
   return (
     <div 
       style={footerStyles}
-      className="_border-neutral-200/70 contrast-more:_border-neutral-400 dark:_border-primary-100/10 contrast-more:dark:_border-neutral-400"
+      className="_border-t dark:_border-neutral-800 contrast-more:_border-neutral-400 dark:contrast-more:_border-neutral-400 print:_hidden"
     >
       {/* Copyright on the left */}
       <div style={{
