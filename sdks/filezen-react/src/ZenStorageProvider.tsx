@@ -83,7 +83,6 @@ export const ZenStorageProvider = (props: FileZenProviderProps) => {
 
   const handleUpload = useCallback(
     (...data: ZenStorageBulkItem[]) => {
-      console.log('handleUpload', data);
       const uploads = data.map((source) => {
         return storage.buildUpload(source.source, source.options);
       });

@@ -1,11 +1,18 @@
-# FileZen Nest.js SDK
+# @filezen/nest
 
 A Nest.js wrapper for the FileZen JavaScript SDK, providing easy integration with Nest.js applications.
 
 ## Installation
 
 ```bash
-npm install @filezen/nest @filezen/js
+# With npm
+npm install @filezen/js @filezen/nest
+
+# With yarn
+yarn add @filezen/js @filezen/nest
+
+# With pnpm
+pnpm add @filezen/js @filezen/nest
 ```
 
 ## Quick Start
@@ -18,6 +25,7 @@ import { FileZenModule } from '@filezen/nest';
 
 @Module({
   imports: [
+    // The FileZenModule will automatically pick up the FILEZEN_API_KEY from environment variables.
     FileZenModule.forRoot(),
   ],
 })
