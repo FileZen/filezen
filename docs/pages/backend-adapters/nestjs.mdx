@@ -1,0 +1,159 @@
+import { Callout } from 'nextra/components'
+
+# NestJS Integration
+
+This guide explains how to integrate FileZen with NestJS applications using the `@filezen/nest` package. This package provides a `FileZenModule` that simplifies configuration and makes the `ZenStorage` service available for dependency injection throughout your application.
+
+## Installation
+
+First, install the necessary packages.
+
+```bash filename="Terminal"
+# With npm
+npm install @filezen/js @filezen/nest
+
+# With yarn
+yarn add @filezen/js @filezen/nest
+
+# With pnpm
+pnpm add @filezen/js @filezen/nest
+```
+
+## Quick Start
+
+<Callout>
+  **API Key Setup**: FileZen requires an API key for authentication. This can be provided via an environment variable (`FILEZEN_API_KEY`) or passed directly in the module configuration options. The SDK will automatically use the environment variable if it's available.
+</Callout>
+
+### 1. Import the Module
+
+Import `FileZenModule` into your root `AppModule`. The module will automatically detect the `FILEZEN_API_KEY` from your environment variables.
+
+```typescript filename="app.module.ts"
+import { Module } from '@nestjs/common';
+import { FileZenModule } from '@filezen/nest';
+
+@Module({
+  imports: [
+    FileZenModule.forRoot(),
+  ],
+})
+export class AppModule {}
+```
+
+<Callout>
+  By default, `FileZenModule` is configured for server-side usage, which means it does not keep track of uploads in memory after they are completed. This is an optimization for performance and memory efficiency in long-running server processes.
+</Callout>
+
+### 2. Inject ZenStorage
+
+You can now inject the `ZenStorage` service into any of your services or controllers using the `@InjectZenStorage()` decorator.
+
+```typescript filename="file.service.ts"
+import { Injectable } from '@nestjs/common';
+import { ZenStorage } from '@filezen/js';
+import { InjectZenStorage } from '@filezen/nest';
+
+@Injectable()
+export class FileService {
+  constructor(
+    @InjectZenStorage()
+    private readonly zenStorage: ZenStorage
+  ) {}
+
+  async uploadFile(file: Buffer, fileName: string) {
+    const result = await this.zenStorage.upload(file, {
+      name: fileName,
+    });
+    
+    if (result.error) {
+      throw result.error;
+    }
+    
+    return result.file;
+  }
+}
+```
+
+## Configuration
+
+You can customize the `FileZenModule` with several options.
+
+### Static Configuration
+
+For static configuration, use the `forRoot` method.
+
+```typescript filename="app.module.ts"
+import { Module } from '@nestjs/common';
+import { FileZenModule } from '@filezen/nest';
+
+@Module({
+  imports: [
+    FileZenModule.forRoot({
+      apiKey: 'your-api-key', // Overrides environment variable
+      global: true, // Make ZenStorage available in all modules
+    }),
+  ],
+})
+export class AppModule {}
+```
+
+### Asynchronous Configuration
+
+For dynamic configuration, such as when using NestJS's `ConfigModule`, use the `forRootAsync` method.
+
+```typescript filename="app.module.ts"
+import { Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { FileZenModule } from '@filezen/nest';
+
+@Module({
+  imports: [
+    ConfigModule.forRoot(),
+    FileZenModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
+        apiKey: configService.get('FILEZEN_API_KEY'),
+      }),
+      inject: [ConfigService],
+      global: true,
+    }),
+  ],
+})
+export class AppModule {}
+```
+
+## Example: File Upload Controller
+
+Here is an example of a controller that handles file uploads using `FileInterceptor` from `@nestjs/platform-express`.
+
+```typescript filename="files.controller.ts"
+import { Controller, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { ZenStorage } from '@filezen/js';
+import { InjectZenStorage } from '@filezen/nest';
+
+@Controller('files')
+export class FilesController {
+  constructor(
+    @InjectZenStorage()
+    private readonly zenStorage: ZenStorage
+  ) {}
+
+  @Post('upload')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadFile(@UploadedFile() file: Express.Multer.File) {
+    const result = await this.zenStorage.upload(file.buffer, {
+      name: file.originalname,
+      mimeType: file.mimetype,
+    });
+    
+    if (result.error) {
+        throw result.error;
+    }
+
+    return result.file;
+  }
+}
+```
+This controller defines a `/files/upload` endpoint that accepts a form-data file upload. The `FileInterceptor` processes the file and makes it available in the `uploadFile` method, which then passes it to `ZenStorage` to be uploaded. 

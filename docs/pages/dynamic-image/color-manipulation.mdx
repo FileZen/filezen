@@ -1,0 +1,72 @@
+# Color Manipulation
+
+## Saturation
+
+**Parameter**: `saturation`  
+**Units**: Number  
+**Range**: -100 to 100  
+**Default**: 0
+
+Change color saturation of the image. Negative values reduce saturation, while positive values increase it.
+
+Examples:
+- `?saturation=-100` (grayscale)
+- `?saturation=-25` (reduced saturation)
+- `?saturation=0` (original)
+- `?saturation=25` (increased saturation)
+
+## Hue
+
+**Parameter**: `hue`  
+**Units**: Number  
+**Range**: 0 to 100  
+**Default**: 0
+
+Adjusts the colors of the image by rotating the color wheel. The default value of 0 is the base color, and increasing the value modulates to the next color for every 33 change.
+
+Examples:
+- `?hue=0` (original)
+- `?hue=33` (first color shift)
+- `?hue=66` (second color shift)
+- `?hue=90` (third color shift)
+
+## Contrast
+
+**Parameter**: `contrast`  
+**Units**: Number  
+**Range**: -100 to 100  
+**Default**: 0
+
+Adjusts the contrast of the output image. Positive values increase contrast, while negative values decrease it.
+
+Examples:
+- `?contrast=0` (original)
+- `?contrast=20` (increased contrast)
+- `?contrast=-20` (decreased contrast)
+
+## Tint
+
+**Parameter**: `tint`  
+**Units**: Hex color code  
+**Default**: ffffff
+
+Apply a tint over the image. The tint function is subtractive.
+
+Examples:
+- `?tint=aaffff` (light blue tint)
+- `?tint=ffffaa` (light yellow tint)
+- `?tint=ffaaff` (light purple tint)
+
+## Sepia
+
+**Parameter**: `sepia`  
+**Units**: Integer  
+**Range**: 0 to 100  
+**Default**: 0
+
+Changes the image color to the sepia color scheme.
+
+Examples:
+- `?sepia=0` (original)
+- `?sepia=50` (partial sepia)
+- `?sepia=100` (full sepia) 

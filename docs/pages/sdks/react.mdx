@@ -1,0 +1,474 @@
+# React SDK
+
+The FileZen React SDK provides a complete solution for file management in React applications with hooks, providers, and TypeScript support.
+
+> 📁 **Code Example**: View the complete working example at [github.com/FileZen/filezen/tree/main/apps/react-with-provider](https://github.com/FileZen/filezen/tree/main/apps/react-with-provider)
+
+## Installation
+
+Install the required FileZen packages:
+
+```bash
+npm install @filezen/react @filezen/js
+# or
+yarn add @filezen/react @filezen/js
+# or
+pnpm add @filezen/react @filezen/js
+```
+
+## API Key Configuration
+
+FileZen requires an API key for authentication. You can provide it in several ways:
+
+### 1. Environment Variables
+
+```env
+# Next.js applications
+NEXT_PUBLIC_FILEZEN_API_KEY=your_api_key_here
+
+# React applications  
+REACT_APP_FILEZEN_API_KEY=your_api_key_here
+
+# Server-side (Node.js)
+FILEZEN_API_KEY=your_api_key_here
+```
+
+> **Note**: FileZen automatically checks these environment variables in order:
+> 1. `{sdk options}.apiKey`
+> 2. `process.env.FILEZEN_API_KEY`
+> 3. `process.env.REACT_APP_FILEZEN_API_KEY` 
+> 4. `process.env.NEXT_PUBLIC_FILEZEN_API_KEY`
+
+### 2. Through FileZenProvider
+
+Pass the API key directly to the provider:
+
+```tsx
+import { FileZenProvider } from '@filezen/react';
+
+export function AppRoot({ children }) {
+  return (
+    <FileZenProvider apiKey="your_api_key_here">
+      {children}
+    </FileZenProvider>
+  );
+}
+```
+
+### 3. Through ZenStorage Instance
+
+Create a storage instance with the API key:
+
+```tsx
+import { FileZenStorage } from '@filezen/react';
+
+const storage = new FileZenStorage({
+  apiKey: 'your_api_key_here',
+  apiUrl: 'https://api.filezen.dev' // optional
+});
+
+// Use storage instance directly
+await storage.upload(file);
+```
+
+### 4. Runtime Configuration
+
+Set the API key dynamically:
+
+```tsx
+import { useFileZen } from '@filezen/react';
+
+function MyComponent() {
+  const fileZen = useFileZen();
+  
+  useEffect(() => {
+    // Set API key at runtime
+    fileZen.storage.apiKey = 'dynamic_api_key';
+  }, []);
+  
+  return <div>Upload component</div>;
+}
+```
+
+## Provider Setup
+
+Wrap your application with the `FileZenProvider`:
+
+```tsx
+import React from 'react';
+import { FileZenProvider } from '@filezen/react';
+import { UploadComponent } from './components/UploadComponent';
+
+function App() {
+  return (
+    <FileZenProvider apiKey={process.env.REACT_APP_FILEZEN_API_KEY}>
+      <div className="App">
+        <h1>My File Upload App</h1>
+        <UploadComponent />
+      </div>
+    </FileZenProvider>
+  );
+}
+
+export default App;
+```
+
+## Using the FileZen Hook
+
+The `useFileZen` hook provides access to all FileZen functionality:
+
+```tsx
+import { useFileZen } from '@filezen/react';
+
+function FileUploadComponent() {
+  const { openPicker, upload, bulkUpload, uploads, cancel } = useFileZen();
+
+  const handlePickerUpload = () => {
+    openPicker({ 
+      multiple: true, 
+      accept: 'image/*' 
+    });
+  };
+
+  const handleDirectUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      await upload(file);
+    }
+  };
+
+  return (
+    <div>
+      <button onClick={handlePickerUpload}>Open File Picker</button>
+      
+      <input type="file" onChange={handleDirectUpload} />
+
+      {uploads.map(upload => (
+        <div key={upload.id}>
+          <span>{upload.name} - {upload.isCompleted ? 'Done' : 'Uploading...'}</span>
+          <button onClick={() => cancel(upload)}>Cancel</button>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+## API Reference
+
+### FileZenProvider
+
+The context provider for FileZen functionality.
+
+**Props:**
+```tsx
+type FileZenProviderProps = {
+  apiKey?: string;           // Your FileZen API key
+  children: React.ReactNode; // Child components
+};
+```
+
+### useFileZen Hook
+
+Returns an object with FileZen methods and state:
+
+```tsx
+const {
+  openPicker,     // (options?) => void - Open file picker dialog
+  upload,         // (file) => Promise<Upload> - Upload single file
+  bulkUpload,     // (...uploads) => Promise<Upload[]> - Upload multiple files
+  uploads,        // Upload[] - Array of active uploads
+  cancel,         // (upload) => void - Cancel an upload
+  storage         // FileZenStorage - Direct access to storage instance
+} = useFileZen();
+```
+
+### File Picker Options
+
+Configure the file picker behavior:
+
+```tsx
+openPicker({
+  multiple: true,        // Allow multiple file selection
+  accept: 'image/*'      // File type restrictions (MIME types)
+});
+```
+
+### Upload Object
+
+Each upload has the following properties:
+
+```tsx
+type Upload = {
+  id: string;           // Unique upload identifier
+  name: string;         // Original file name
+  isCompleted: boolean; // Upload completion status
+  progress?: number;    // Upload progress (0-1)
+  error?: Error;        // Upload error if failed
+  serverResult?: any;   // Server response when completed
+};
+```
+
+## Advanced Usage
+
+### Direct Storage Access
+
+Access the underlying storage instance for advanced operations:
+
+```tsx
+import { useFileZen } from '@filezen/react';
+
+function AdvancedComponent() {
+  const { storage } = useFileZen();
+
+  const deleteFile = async (fileUrl: string) => {
+    try {
+      await storage.deleteFileByUrl(fileUrl);
+      console.log('File deleted successfully');
+    } catch (error) {
+      console.error('Delete failed:', error);
+    }
+  };
+
+  return (
+    <button onClick={() => deleteFile('https://example.com/file.jpg')}>
+      Delete File
+    </button>
+  );
+}
+```
+
+### Upload Event Listeners
+
+Monitor upload progress with custom listeners:
+
+```tsx
+import { useFileZen, FileZenStorageListener } from '@filezen/react';
+import { useEffect } from 'react';
+
+function UploadMonitor() {
+  const { storage } = useFileZen();
+
+  useEffect(() => {
+    const listener: FileZenStorageListener = {
+      onUploadStart: (upload) => {
+        console.log(`Started uploading: ${upload.name}`);
+      },
+      onUploadProgress: (upload, progress) => {
+        console.log(`${upload.name}: ${Math.round(progress * 100)}%`);
+      },
+      onUploadComplete: (upload) => {
+        console.log(`Completed: ${upload.name}`, upload.serverResult);
+      },
+      onUploadError: (upload, error) => {
+        console.error(`Failed: ${upload.name}`, error.message);
+      }
+    };
+
+    storage.addListener(listener);
+
+    return () => {
+      storage.removeListener(listener);
+    };
+  }, [storage]);
+
+  return <div>Upload monitoring active</div>;
+}
+```
+
+### Bulk Upload with Options
+
+Upload multiple files with specific configurations:
+
+```tsx
+import { useFileZen } from '@filezen/react';
+
+function BulkUploadComponent() {
+  const { bulkUpload } = useFileZen();
+
+  const handleBulkUpload = async (files: FileList) => {
+    const uploads = Array.from(files).map(file => ({
+      source: file,
+      options: {
+        folder: 'images',
+        metadata: { category: 'user-uploads' }
+      }
+    }));
+
+    try {
+      const results = await bulkUpload(...uploads);
+      console.log('All uploads completed:', results);
+    } catch (error) {
+      console.error('Bulk upload failed:', error);
+    }
+  };
+
+  return (
+    <input
+      type="file"
+      multiple
+      onChange={(e) => e.target.files && handleBulkUpload(e.target.files)}
+    />
+  );
+}
+```
+
+## TypeScript Support
+
+The React SDK includes full TypeScript definitions:
+
+```tsx
+import { 
+  FileZenProvider, 
+  useFileZen, 
+  FileZenStorageListener,
+  ZenUpload,
+  FileZenError 
+} from '@filezen/react';
+
+// All types are automatically inferred
+const { uploads, upload } = useFileZen();
+
+// Custom event handler with proper typing
+const handleUpload = async (file: File): Promise<void> => {
+  try {
+    const result: ZenUpload = await upload(file);
+    console.log('Upload result:', result);
+  } catch (error: FileZenError) {
+    console.error('Upload failed:', error.message);
+  }
+};
+```
+
+## Error Handling
+
+Handle upload errors gracefully:
+
+```tsx
+import { useFileZen } from '@filezen/react';
+import { useState } from 'react';
+
+function SafeUploadComponent() {
+  const { upload } = useFileZen();
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleUpload = async (file: File) => {
+    setError(null);
+    setIsLoading(true);
+
+    try {
+      await upload(file);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Upload failed');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div>
+      {error && (
+        <div className="error">
+          Error: {error}
+        </div>
+      )}
+      
+      <input
+        type="file"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) handleUpload(file);
+        }}
+        disabled={isLoading}
+      />
+      
+      {isLoading && <div>Uploading...</div>}
+    </div>
+  );
+}
+```
+
+## Best Practices
+
+### 1. Provider Placement
+
+Place the `FileZenProvider` as high as possible in your component tree:
+
+```tsx
+// ✅ Good - At app root
+function App() {
+  return (
+    <FileZenProvider apiKey={process.env.REACT_APP_FILEZEN_API_KEY}>
+      <Router>
+        <Routes>
+          {/* Your routes */}
+        </Routes>
+      </Router>
+    </FileZenProvider>
+  );
+}
+```
+
+### 2. Environment Variables
+
+Use environment variables for API keys to keep them secure:
+
+```tsx
+// ✅ Good - Environment variable
+<FileZenProvider apiKey={process.env.REACT_APP_FILEZEN_API_KEY}>
+
+// ❌ Bad - Hardcoded API key
+<FileZenProvider apiKey="sk-1234567890">
+```
+
+### 3. Error Boundaries
+
+Wrap FileZen components in error boundaries:
+
+```tsx
+import { ErrorBoundary } from 'react-error-boundary';
+
+function ErrorFallback({ error }: { error: Error }) {
+  return (
+    <div role="alert">
+      <h2>Something went wrong:</h2>
+      <pre>{error.message}</pre>
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <ErrorBoundary FallbackComponent={ErrorFallback}>
+      <FileZenProvider apiKey={process.env.REACT_APP_FILEZEN_API_KEY}>
+        <UploadComponent />
+      </FileZenProvider>
+    </ErrorBoundary>
+  );
+}
+```
+
+### 4. Performance Optimization
+
+Use `React.memo` for upload list components:
+
+```tsx
+import React from 'react';
+
+const UploadItem = React.memo(({ upload, onCancel }: {
+  upload: Upload;
+  onCancel: (upload: Upload) => void;
+}) => {
+  return (
+    <div>
+      <span>{upload.name}</span>
+      {!upload.isCompleted && (
+        <button onClick={() => onCancel(upload)}>Cancel</button>
+      )}
+    </div>
+  );
+});
+```
+
+This React SDK documentation provides comprehensive coverage of all FileZen React functionality with practical examples and best practices. 

@@ -1,0 +1,24 @@
+# Luminosity
+
+## Brightness
+
+**Parameter**: `brightness`  
+**Units**: Number  
+**Range**: -100 to 100  
+**Default**: 0
+
+You can easily lighten or darken the image using the brightness parameter. Note that this operation affects each pixel in the same manner, so you will quickly lose the blacks when making the image brighter and whites when making it darker.
+
+Examples:
+- `?brightness=0` (original)
+- `?brightness=15` (brighter)
+- `?brightness=-15` (darker)
+
+## Gamma
+
+**Parameter**: `gamma`  
+**Units**: Number  
+**Range**: -100 to 100  
+**Default**: 0
+
+Brighten or darken an image based on each pixel's current luminosity. Contrary to the brightness adjustment, with gamma, bright pixels will be affected more than dark pixels, which more closely mimics how our eyes perceive levels of brightness. This can expose additional detail while better-preserving blacks/whites. You can use it to fix the global tonality issues of your images. 

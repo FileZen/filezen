@@ -1,0 +1,188 @@
+# React Integration
+
+Learn how to integrate FileZen with React applications.
+
+> 📁 **Code Example**: View the complete working example at [github.com/FileZen/filezen/tree/main/apps/react-with-provider](https://github.com/FileZen/filezen/tree/main/apps/react-with-provider)
+
+## Installation
+
+Install the required FileZen packages:
+
+```bash
+npm install @filezen/react @filezen/js
+# or
+yarn add @filezen/react @filezen/js
+# or
+pnpm add @filezen/react @filezen/js
+```
+
+## Setup
+
+### 1. Provider Setup
+
+Wrap your application with the `FileZenProvider`:
+
+```tsx
+import { FileZenProvider } from '@filezen/react';
+
+function App() {
+  return (
+    <FileZenProvider apiKey="your-api-key">
+      {/* Your app components */}
+    </FileZenProvider>
+  );
+}
+```
+
+### 2. Using the FileZen Hook
+
+Use the `useFileZen` hook to access FileZen functionality:
+
+```tsx
+import { useFileZen } from '@filezen/react';
+
+function FileUploadComponent() {
+  const { openPicker, uploads, cancel } = useFileZen();
+
+  const handleUpload = () => {
+    openPicker({ 
+      multiple: true, 
+      accept: 'image/*' 
+    });
+  };
+
+  return (
+    <div>
+      <button onClick={handleUpload}>Upload Images</button>
+      
+      {/* Display uploading files */}
+      {uploads.map(upload => (
+        <div key={upload.id}>
+          <span>{upload.name} - {upload.isCompleted ? 'Done' : 'Uploading...'}</span>
+          <button onClick={() => cancel(upload)}>Cancel</button>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+## FileZenStorage API
+
+### Configuration Options
+
+```tsx
+type FileZenProviderProps = {
+  apiKey?: string;           // Your FileZen API key
+};
+```
+
+### Available Methods
+
+```tsx
+const { openPicker, upload, bulkUpload, uploads, cancel } = useFileZen();
+
+// Open file picker
+openPicker({
+  multiple: true,     // Allow multiple files
+  accept: 'image/*'   // File type restrictions
+});
+
+// Upload single file
+const uploadResult = await upload(file);
+
+// Upload multiple files
+const uploads = Array.from(files).map(file => ({ source: file, options: {} }));
+const results = await bulkUpload(...uploads);
+
+// Cancel upload
+cancel(upload);
+```
+
+### Direct File Upload
+
+Upload files directly without the picker:
+
+```tsx
+import { useFileZen } from '@filezen/react';
+
+function DirectUploadComponent() {
+  const { upload } = useFileZen();
+
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      try {
+        const uploadResult = await upload(file);
+        console.log('Upload completed:', uploadResult);
+      } catch (error) {
+        console.error('Upload failed:', error);
+      }
+    }
+  };
+
+  return (
+    <input type="file" onChange={handleFileSelect} />
+  );
+}
+```
+
+## Complete Example
+
+```tsx
+import React from 'react';
+import { FileZenProvider, useFileZen } from '@filezen/react';
+
+function FileUploader() {
+  const { openPicker, upload, bulkUpload, uploads, cancel } = useFileZen();
+
+  const handlePickerUpload = () => {
+    openPicker({ 
+      multiple: true, 
+      accept: 'image/*' 
+    });
+  };
+
+  const handleDirectUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      await upload(file);
+    }
+  };
+
+  const handleBulkUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files && files.length > 0) {
+      const uploads = Array.from(files).map(file => ({ source: file, options: {} }));
+      await bulkUpload(...uploads);
+    }
+  };
+
+  return (
+    <div>
+      <button onClick={handlePickerUpload}>Open File Picker</button>
+      
+      <input type="file" onChange={handleDirectUpload} />
+      
+      <input type="file" multiple onChange={handleBulkUpload} />
+
+      {uploads.map(upload => (
+        <div key={upload.id}>
+          <span>{upload.name} - {upload.isCompleted ? 'Done' : 'Uploading...'}</span>
+          <button onClick={() => cancel(upload)}>Cancel</button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <FileZenProvider apiKey="your-api-key">
+      <FileUploader />
+    </FileZenProvider>
+  );
+}
+
+export default App;
+``` 

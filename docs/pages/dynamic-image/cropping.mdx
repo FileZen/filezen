@@ -1,0 +1,61 @@
+# Cropping
+
+## Crop
+
+**Parameter**: `crop`  
+**Units**: Pixels  
+**Format 1**: `width,height`  
+**Format 2**: `width,height,x,y`
+
+Crop the output image to the given width and height. Two formats are accepted:
+- Format 1: Only includes the width and height of the crop
+- Format 2: Includes the X and Y offsets that determine where the crop should start
+
+> **Note**: Image resizing with the width and height parameters is processed after the crop. Make sure to base the values on the original image dimensions.
+
+Examples:
+- `?crop=3500,3500`
+- `?crop=3500,3500,250,300`
+- `?crop=300,300`
+
+## Aspect Ratio Crop
+
+**Parameter**: `aspect_ratio`  
+**Default value**: auto
+
+Crop the output image to match the given aspect ratio. The default origin point (gravity) is set to the center of the image.
+
+Examples:
+- `?aspect_ratio=2:4`
+- `?aspect_ratio=1:1`
+- `?aspect_ratio=16:9`
+
+## Crop Gravity
+
+**Parameter**: `crop_gravity`  
+**Default**: center  
+**Values**: center, east, north, south, west, northeast, northwest, southeast, southwest
+
+Set the gravity of the crop operation. This is used with Format 1 cropping only and snaps the crop to the selected position.
+
+Examples:
+- `?crop_gravity=northwest`
+- `?crop_gravity=southwest`
+- `?crop_gravity=south`
+- `?crop_gravity=center`
+
+## Focus Crop
+
+**Parameter**: `focus_crop`  
+**Format 1**: `width,height,x_coordinate,y_coordinate`  
+**Format 2**: `width,height,x_relative,y_relative`
+
+Focus crop is similar to a four-parameter crop function but you define the center of your crop instead of the start of a crop. This ensures that what you are trying to focus on is positioned in the middle of the picture where possible. If the focus is set too close to the borders of the image for a given width and height, the focus will be moved to ensure the cropped image matches the wanted dimensions.
+
+The x and y coordinates can be either:
+- Absolute values (pixels)
+- Relative offsets (ranging between 0.0 and 1.0)
+
+Examples:
+- `?focus_crop=800,600,900,600`
+- `?focus_crop=800,600,0.5,0.5` 

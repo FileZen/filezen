@@ -22,7 +22,7 @@
   "workspaces": [
     "apps/*",
     "sdks/*",
-    "examples/*",
-    "packages/*"
+    "packages/*",
+    "docs"
   ]
 }

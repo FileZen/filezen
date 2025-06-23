@@ -1,0 +1,163 @@
+# Next.js Integration
+
+Learn how to integrate FileZen with Next.js applications using the App Router.
+
+> 📁 **Code Example**: View the complete working example at [github.com/FileZen/filezen/tree/main/apps/nextjs-app-router](https://github.com/FileZen/filezen/tree/main/apps/nextjs-app-router)
+
+## Installation
+
+Install the required FileZen packages:
+
+```bash
+npm install @filezen/react @filezen/js
+# or
+yarn add @filezen/react @filezen/js
+# or
+pnpm add @filezen/react @filezen/js
+```
+
+## Using FileZen with App Router
+
+> **💡 Recommended**: Using API routes is the preferred integration method as it keeps your API keys secure on the server-side and prevents exposure to client-side code.
+
+### Environment Variables
+
+Add your FileZen API key to your environment file for server-side usage:
+
+```env
+# Server-side API key for Next.js API routes
+FILEZEN_API_KEY=your_api_key_here
+```
+
+> **Note**: FileZen automatically detects this environment variable, so no additional configuration is needed in your API routes.
+
+For other API key configuration methods (client-side, provider setup, etc.), see the [React SDK API Key Configuration](/sdks/react#api-key-configuration).
+
+### API Routes Setup
+
+Create API routes to handle file operations server-side:
+
+```tsx
+// app/api/files/upload/route.ts
+import { ZenStorage } from '@filezen/js';
+import { NextRequest, NextResponse } from 'next/server';
+
+const zenStorage = new ZenStorage();
+
+export async function POST(request: NextRequest) {
+  try {
+    const formData = await request.formData();
+    const file = formData.get('file') as File;
+
+    if (!file) {
+      return NextResponse.json({ error: 'No file provided' }, { status: 400 });
+    }
+
+    const result = await zenStorage.upload(file);
+
+    if (result.error) {
+      return NextResponse.json(
+        { error: result.error.message },
+        { status: 400 },
+      );
+    }
+
+    return NextResponse.json({ file: result.file });
+  } catch (error) {
+    console.error('Upload error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 },
+    );
+  }
+}
+
+
+```
+
+### Upload Your Files
+
+Upload your files easily and securely through your API route:
+
+```tsx
+// components/FileUpload.tsx
+'use client';
+
+import { ZenError, ZenFile } from '@filezen/js';
+import React from 'react';
+
+export const FileUpload = () => {
+  const [isUploading, setIsUploading] = React.useState(false);
+  const [error, setError] = React.useState<ZenError | null>(null);
+  const [uploadResult, setUploadResult] = React.useState<ZenFile | null>(null);
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setError(null);
+    setIsUploading(true);
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await fetch('/api/files/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError({ message: data.error });
+        return;
+      }
+
+      setUploadResult(data.file);
+    } catch (err) {
+      setError({ message: 'Upload failed' });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  return (
+    <div>
+      <h3>Upload File</h3>
+      
+      <input 
+        type="file" 
+        onChange={handleFileChange} 
+        disabled={isUploading}
+      />
+
+      {isUploading && <p>Uploading...</p>}
+
+      {error && (
+        <p style={{ color: 'red' }}>Error: {error.message}</p>
+      )}
+
+      {uploadResult && (
+        <div>
+          <p>File uploaded successfully!</p>
+          <p>File ID: {uploadResult.id}</p>
+          <p>CDN URL: <a href={uploadResult.cdnUrl} target="_blank" rel="noopener noreferrer">{uploadResult.cdnUrl}</a></p>
+        </div>
+      )}
+    </div>
+  );
+};
+```
+
+
+
+
+
+
+
+
+
+
+
+ 
