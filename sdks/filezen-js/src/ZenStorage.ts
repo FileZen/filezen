@@ -1,3 +1,4 @@
+import { ZenSigner, ZenSignerGenerateOptions } from './server';
 import {
   ZenStorageBulkItem,
   ZenStorageSource,
@@ -26,12 +27,14 @@ export type ZenStorageListener = {
 
 export class ZenStorage {
   readonly api: ZenApi;
+  readonly signer: ZenSigner;
 
   private listeners: ZenStorageListener[] = [];
   private uploads: Map<string, ZenUpload> = new Map<string, ZenUpload>();
 
   constructor(readonly options: ZenStorageOptions = {}) {
     this.api = new ZenApi(options);
+    this.signer = new ZenSigner(this.api);
   }
 
   addListener(listener: ZenStorageListener) {
@@ -65,7 +68,7 @@ export class ZenStorage {
     const zenUploads = uploads.map((upload) =>
       this.buildUpload(upload.source, upload.options),
     );
-    await Promise.all(zenUploads);
+    await Promise.all(zenUploads.map((upload) => upload.upload()));
     return zenUploads;
   }
 
@@ -114,5 +117,9 @@ export class ZenStorage {
 
   deleteByUrl(url: string) {
     return this.api.deleteFileByUrl(url);
+  }
+
+  generateSignedUrl(options: ZenSignerGenerateOptions) {
+    return this.signer.generateSignedUrl(options);
   }
 }

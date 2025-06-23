@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FileZen Node.js Server Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+        }
+        .section h2 {
+            margin-top: 0;
+            color: #555;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        input[type="file"], input[type="text"], select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .loader {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 1px solid #f3f3f3;
+            border-top: 1px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .button-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 FileZen Node.js Server Test</h1>
+        
+        <div class="section">
+            <h2>📤 Single File Upload</h2>
+            <form id="singleUploadForm">
+                <div class="form-group">
+                    <label for="singleFile">Select File:</label>
+                    <input type="file" id="singleFile" name="file" required>
+                </div>
+                <button type="submit">
+                    <div class="button-content">
+                        <span class="loader" style="display: none;"></span>
+                        <span>Upload File</span>
+                    </div>
+                </button>
+            </form>
+            <div id="singleResult" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="section">
+            <h2>📁 Bulk File Upload</h2>
+            <form id="bulkUploadForm">
+                <div class="form-group">
+                    <label for="bulkFiles">Select Files:</label>
+                    <input type="file" id="bulkFiles" name="files" multiple required>
+                </div>
+                <button type="submit">
+                    <div class="button-content">
+                        <span class="loader" style="display: none;"></span>
+                        <span>Upload Files</span>
+                    </div>
+                </button>
+            </form>
+            <div id="bulkResult" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="section">
+            <h2>🌐 Upload from URL</h2>
+            <form id="urlUploadForm">
+                <div class="form-group">
+                    <label for="urlInput">File URL:</label>
+                    <input type="url" id="urlInput" name="url" required placeholder="https://example.com/file.jpg">
+                </div>
+                <div class="form-group">
+                    <label for="urlName">Custom Name (optional):</label>
+                    <input type="text" id="urlName" name="name" placeholder="downloaded-file.jpg">
+                </div>
+                <button type="submit">
+                    <div class="button-content">
+                        <span class="loader" style="display: none;"></span>
+                        <span>Upload from URL</span>
+                    </div>
+                </button>
+            </form>
+            <div id="urlResult" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="section">
+            <h2>🔐 Generate Signed URL & Upload</h2>
+            <form id="signedUrlForm">
+                <div class="form-group">
+                    <label for="signedUrlFile">Select File:</label>
+                    <input type="file" id="signedUrlFile" name="file" required>
+                </div>
+                <div class="form-group">
+                    <label for="signedUrlExpiresIn">Expires In (seconds, optional):</label>
+                    <input type="number" id="signedUrlExpiresIn" name="expiresIn" placeholder="3600" min="60" max="86400" value="3600">
+                </div>
+                <button type="submit">
+                    <div class="button-content">
+                        <span class="loader" style="display: none;"></span>
+                        <span>Generate Signed URL & Upload</span>
+                    </div>
+                </button>
+            </form>
+            <div id="signedUrlResult" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="section">
+            <h2>🗑️ Delete File</h2>
+            <form id="deleteForm">
+                <div class="form-group">
+                    <label for="deleteUrl">File URL to Delete:</label>
+                    <input type="url" id="deleteUrl" name="url" required placeholder="https://filezen.com/file-url">
+                </div>
+                <button type="submit">
+                    <div class="button-content">
+                        <span class="loader" style="display: none;"></span>
+                        <span>Delete File</span>
+                    </div>
+                </button>
+            </form>
+            <div id="deleteResult" class="result" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3001/api';
+
+        function showResult(elementId, data, isError = false) {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            element.className = `result ${isError ? 'error' : 'success'}`;
+            element.textContent = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+        }
+
+        function hideResult(elementId) {
+            document.getElementById(elementId).style.display = 'none';
+        }
+
+        function showLoader(button) {
+            const loader = button.querySelector('.loader');
+            const text = button.querySelector('span:last-child');
+            loader.style.display = 'inline-block';
+            button.disabled = true;
+        }
+
+        function hideLoader(button) {
+            const loader = button.querySelector('.loader');
+            const text = button.querySelector('span:last-child');
+            loader.style.display = 'none';
+            button.disabled = false;
+        }
+
+        // Single file upload
+        document.getElementById('singleUploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideResult('singleResult');
+            
+            const button = e.target.querySelector('button');
+            showLoader(button);
+            
+            const formData = new FormData();
+            const file = document.getElementById('singleFile').files[0];
+
+            if (!file) {
+                showResult('singleResult', 'Please select a file', true);
+                hideLoader(button);
+                return;
+            }
+
+            formData.append('file', file);
+
+            try {
+                const response = await fetch(`${API_BASE}/files/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                showResult('singleResult', result, !response.ok);
+            } catch (error) {
+                showResult('singleResult', `Error: ${error.message}`, true);
+            } finally {
+                hideLoader(button);
+            }
+        });
+
+        // Bulk file upload
+        document.getElementById('bulkUploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideResult('bulkResult');
+            
+            const button = e.target.querySelector('button');
+            showLoader(button);
+            
+            const formData = new FormData();
+            const files = document.getElementById('bulkFiles').files;
+
+            if (files.length === 0) {
+                showResult('bulkResult', 'Please select files', true);
+                hideLoader(button);
+                return;
+            }
+
+            for (let file of files) {
+                formData.append('files', file);
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/files/bulk-upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                showResult('bulkResult', result, !response.ok);
+            } catch (error) {
+                showResult('bulkResult', `Error: ${error.message}`, true);
+            } finally {
+                hideLoader(button);
+            }
+        });
+
+        // URL upload
+        document.getElementById('urlUploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideResult('urlResult');
+            
+            const button = e.target.querySelector('button');
+            showLoader(button);
+            
+            const url = document.getElementById('urlInput').value;
+            const name = document.getElementById('urlName').value;
+
+            const data = { url };
+            if (name) data.name = name;
+
+            try {
+                const response = await fetch(`${API_BASE}/files/upload-from-url`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                showResult('urlResult', result, !response.ok);
+            } catch (error) {
+                showResult('urlResult', `Error: ${error.message}`, true);
+            } finally {
+                hideLoader(button);
+            }
+        });
+
+        // Generate signed URL
+        document.getElementById('signedUrlForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideResult('signedUrlResult');
+            
+            const button = e.target.querySelector('button');
+            showLoader(button);
+            
+            const file = document.getElementById('signedUrlFile').files[0];
+            const expiresIn = document.getElementById('signedUrlExpiresIn').value;
+
+            if (!file) {
+                showResult('signedUrlResult', 'Please select a file', true);
+                hideLoader(button);
+                return;
+            }
+
+            try {
+                // Step 1: Generate signed URL
+                const signedUrlData = {
+                    fileKey: file.name,
+                    expiresIn: expiresIn ? parseInt(expiresIn) : 3600
+                };
+
+                const signedUrlResponse = await fetch(`${API_BASE}/files/generate-signed-url`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(signedUrlData)
+                });
+
+                if (!signedUrlResponse.ok) {
+                    const error = await signedUrlResponse.json();
+                    showResult('signedUrlResult', `Failed to generate signed URL: ${error.message || error.error}`, true);
+                    hideLoader(button);
+                    return;
+                }
+
+                const signedUrlResult = await signedUrlResponse.json();
+                const signedUrl = signedUrlResult.signedUrl;
+
+                // Step 2: Upload file to signed URL
+                const uploadFormData = new FormData();
+                uploadFormData.append('file', file);
+
+                const uploadResponse = await fetch(signedUrl, {
+                    method: 'POST',
+                    body: uploadFormData
+                });
+
+                if (!uploadResponse.ok) {
+                    const uploadError = await uploadResponse.text();
+                    showResult('signedUrlResult', `Signed URL generated successfully!\n\nSigned URL: ${signedUrl}\n\nUpload failed: ${uploadError}`, true);
+                    hideLoader(button);
+                    return;
+                }
+
+                const uploadResult = await uploadResponse.json();
+
+                // Step 3: Show complete result
+                const completeResult = {
+                    step1: {
+                        message: 'Signed URL generated successfully',
+                        signedUrl: signedUrl,
+                        expiresIn: signedUrlResult.expiresIn
+                    },
+                    step2: {
+                        message: 'File uploaded successfully to signed URL',
+                        uploadResult: uploadResult
+                    }
+                };
+
+                showResult('signedUrlResult', completeResult, false);
+            } catch (error) {
+                showResult('signedUrlResult', `Error: ${error.message}`, true);
+            } finally {
+                hideLoader(button);
+            }
+        });
+
+        // Delete file
+        document.getElementById('deleteForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideResult('deleteResult');
+            
+            const button = e.target.querySelector('button');
+            showLoader(button);
+            
+            const url = document.getElementById('deleteUrl').value;
+
+            try {
+                const response = await fetch(`${API_BASE}/files/delete`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url })
+                });
+                const result = await response.json();
+                showResult('deleteResult', result, !response.ok);
+            } catch (error) {
+                showResult('deleteResult', `Error: ${error.message}`, true);
+            } finally {
+                hideLoader(button);
+            }
+        });
+    </script>
+</body>
+</html> 

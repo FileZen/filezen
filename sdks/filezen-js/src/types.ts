@@ -61,7 +61,7 @@ export type ZenStorageUploadOptions = {
 };
 
 export type ZenStorageBulkItem = {
-  source: ZenUploadSource;
+  source: ZenStorageSource;
   options?: ZenStorageUploadOptions;
 };
 

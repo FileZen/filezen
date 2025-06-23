@@ -2,6 +2,7 @@ import axios from 'axios';
 import { DEFAULT_SIGN_URL } from './constants';
 import {
   ZenStorageBulkItem,
+  ZenStorageSource,
   ZenStorageUploadOptions,
   ZenUploadSource,
 } from './types';
@@ -80,7 +81,7 @@ export class ZenClient {
   }
 
   buildUpload(
-    source: ZenUploadSource,
+    source: ZenStorageSource,
     options?: ZenStorageUploadOptions,
   ): ZenUpload {
     const zenUpload: ZenUpload = this.uploader.buildUpload(source, options);
