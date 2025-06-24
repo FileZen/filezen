@@ -22,10 +22,10 @@ class ZenApi:
 
         # Get API key from options or environment
         self.api_key = (
-                self.options.get("api_key")
-                or os.getenv("FILEZEN_API_KEY")
-                or os.getenv("REACT_APP_FILEZEN_API_KEY")
-                or os.getenv("NEXT_PUBLIC_FILEZEN_API_KEY")
+            self.options.get("api_key")
+            or os.getenv("FILEZEN_API_KEY")
+            or os.getenv("REACT_APP_FILEZEN_API_KEY")
+            or os.getenv("NEXT_PUBLIC_FILEZEN_API_KEY")
         )
 
         if not self.api_key:
@@ -55,7 +55,7 @@ class ZenApi:
         )
 
     async def upload_file(
-            self, source: bytes, params: Dict[str, Any]
+        self, source: bytes, params: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Upload a file to FileZen.
 
@@ -122,7 +122,7 @@ class ZenApi:
             raise ZenNetworkError(f"Network error: {str(e)}") from e
 
     async def initialize_multipart_upload(
-            self, params: Dict[str, Any]
+        self, params: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Initialize a multipart upload.
 
@@ -151,7 +151,7 @@ class ZenApi:
             raise ZenNetworkError(f"Network error: {str(e)}") from e
 
     async def upload_chunk(
-            self, session_id: str, chunk: bytes, chunk_index: int, chunk_size: int
+        self, session_id: str, chunk: bytes, chunk_index: int, chunk_size: int
     ) -> Dict[str, Any]:
         """Upload a chunk in multipart upload.
 
@@ -198,10 +198,10 @@ class ZenApi:
         return self
 
     async def __aexit__(
-            self,
-            exc_type: Optional[type],
-            exc_val: Optional[BaseException],
-            exc_tb: Optional[Any],
+        self,
+        exc_type: Optional[type],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[Any],
     ) -> None:
         """Async context manager exit."""
         await self.close()
