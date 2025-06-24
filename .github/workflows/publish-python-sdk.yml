@@ -72,10 +72,12 @@ jobs:
       run: |
         cd sdks/filezen-python
         python -m build
+        ls -la dist/
     
     - name: Check package
       run: |
         cd sdks/filezen-python
+        ls -la dist/
         twine check dist/*
 
     - name: Publish package distributions to TestPyPI
