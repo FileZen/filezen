@@ -9,7 +9,7 @@ description = "Python SDK for FileZen file management service"
 readme = "README.md"
 license = {text = "MIT"}
 authors = [
-    {name = "FileZen Team", email = "team@filezen.dev"}
+    {name = "FileZen Team", email = "support@filezen.dev"}
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
