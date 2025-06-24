@@ -48,7 +48,7 @@ jobs:
     - name: Type check with mypy
       run: |
         cd sdks/filezen-python
-        mypy --ignore-missing-imports --no-strict-optional --no-warn-unused-ignores src/filezen/__init__.py src/filezen/zen_api.py src/filezen/zen_error.py src/filezen/zen_file.py src/filezen/zen_storage.py src/filezen/zen_upload.py src/filezen/constants.py
+        mypy src/
 
   build-and-publish:
     needs: test
