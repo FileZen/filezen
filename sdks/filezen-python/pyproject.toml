@@ -29,7 +29,7 @@ classifiers = [
 requires-python = ">=3.8,<3.13"
 dependencies = [
     "httpx>=0.24.0",
-    "pydantic>=2.6.0,<3.0.0",
+    "pydantic>=2.0.0,<3.0.0",
 ]
 
 [project.optional-dependencies]
@@ -64,6 +64,14 @@ python_version = "3.8"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
+exclude = [
+    ".*/site-packages/.*",
+    ".*/dist-packages/.*",
+    ".*/venv/.*",
+    ".*/\\.venv/.*",
+]
+ignore_missing_imports = true
+namespace_packages = true
 
 [tool.ruff]
 target-version = "py38"
