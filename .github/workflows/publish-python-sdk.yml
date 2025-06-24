@@ -40,10 +40,10 @@ jobs:
         cd sdks/filezen-python
         ruff check src/
     
-    - name: Check formatting with black
+    - name: Check formatting with ruff
       run: |
         cd sdks/filezen-python
-        black --check src/
+        ruff format --check src/
     
     - name: Type check with mypy
       run: |
