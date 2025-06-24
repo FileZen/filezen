@@ -29,7 +29,7 @@ class ZenStorageOptions(BaseModel):
 
     api_key: Optional[str] = Field(None, description="FileZen API key")
     api_url: Optional[str] = Field(None, description="FileZen API URL")
-    keep_uploads: bool = Field(True, description="Whether to keep track of uploads")
+    keep_uploads: bool = Field(False, description="Whether to keep track of uploads")
 
     class Config:
         """Pydantic configuration."""
@@ -52,13 +52,13 @@ class ZenStorage:
             options_obj = ZenStorageOptions(
                 api_key=options.get("api_key"),
                 api_url=options.get("api_url"),
-                keep_uploads=bool(options.get("keep_uploads", True)),
+                keep_uploads=bool(options.get("keep_uploads", False)),
             )
         elif options is None:
             options_obj = ZenStorageOptions(
                 api_key=None,
                 api_url=None,
-                keep_uploads=True,
+                keep_uploads=False,
             )
         else:
             options_obj = ZenStorageOptions(
