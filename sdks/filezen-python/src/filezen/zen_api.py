@@ -50,11 +50,13 @@ class ZenApi:
                 connect=30.0,  # Connection timeout
                 read=300.0,  # Read timeout (5 minutes for large files)
                 write=300.0,  # Write timeout (5 minutes for large files)
-                pool=30.0  # Pool timeout
-            )
+                pool=30.0,  # Pool timeout
+            ),
         )
 
-    async def upload_file(self, source: bytes, params: Dict[str, Any]) -> Dict[str, Any]:
+    async def upload_file(
+            self, source: bytes, params: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Upload a file to FileZen.
 
         Args:
@@ -66,7 +68,13 @@ class ZenApi:
         """
         try:
             # Prepare multipart form data
-            files = {"file": (params["name"], source, params.get("mimeType", "application/octet-stream"))}
+            files = {
+                "file": (
+                    params["name"],
+                    source,
+                    params.get("mimeType", "application/octet-stream"),
+                )
+            }
 
             # Additional form data
             data = {}
@@ -80,13 +88,13 @@ class ZenApi:
 
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 401:
-                raise ZenAuthenticationError("Invalid API key")
+                raise ZenAuthenticationError("Invalid API key") from e
             elif e.response.status_code == 413:
-                raise ZenNetworkError("File too large")
+                raise ZenNetworkError("File too large") from e
             else:
-                raise ZenNetworkError(f"Upload failed: {e.response.text}")
+                raise ZenNetworkError(f"Upload failed: {e.response.text}") from e
         except httpx.RequestError as e:
-            raise ZenNetworkError(f"Network error: {str(e)}")
+            raise ZenNetworkError(f"Network error: {str(e)}") from e
 
     async def delete_file_by_url(self, url: str) -> Dict[str, Any]:
         """Delete a file by URL.
@@ -98,20 +106,24 @@ class ZenApi:
             Delete result
         """
         try:
-            response = await self.client.delete("/files/delete-by-url", params={"url": url})
+            response = await self.client.delete(
+                "/files/delete-by-url", params={"url": url}
+            )
             response.raise_for_status()
 
             return {"data": True}
 
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 401:
-                raise ZenAuthenticationError("Invalid API key")
+                raise ZenAuthenticationError("Invalid API key") from e
             else:
-                raise ZenNetworkError(f"Delete failed: {e.response.text}")
+                raise ZenNetworkError(f"Delete failed: {e.response.text}") from e
         except httpx.RequestError as e:
-            raise ZenNetworkError(f"Network error: {str(e)}")
+            raise ZenNetworkError(f"Network error: {str(e)}") from e
 
-    async def initialize_multipart_upload(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    async def initialize_multipart_upload(
+            self, params: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Initialize a multipart upload.
 
         Args:
@@ -121,20 +133,26 @@ class ZenApi:
             Multipart upload initialization result
         """
         try:
-            response = await self.client.post("/files/chunk-upload/initialize", json=params)
+            response = await self.client.post(
+                "/files/chunk-upload/initialize", json=params
+            )
             response.raise_for_status()
 
             return {"data": response.json()}
 
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 401:
-                raise ZenAuthenticationError("Invalid API key")
+                raise ZenAuthenticationError("Invalid API key") from e
             else:
-                raise ZenNetworkError(f"Multipart upload initialization failed: {e.response.text}")
+                raise ZenNetworkError(
+                    f"Multipart upload initialization failed: {e.response.text}"
+                ) from e
         except httpx.RequestError as e:
-            raise ZenNetworkError(f"Network error: {str(e)}")
+            raise ZenNetworkError(f"Network error: {str(e)}") from e
 
-    async def upload_chunk(self, session_id: str, chunk: bytes, chunk_index: int, chunk_size: int) -> Dict[str, Any]:
+    async def upload_chunk(
+            self, session_id: str, chunk: bytes, chunk_index: int, chunk_size: int
+    ) -> Dict[str, Any]:
         """Upload a chunk in multipart upload.
 
         Args:
@@ -147,34 +165,43 @@ class ZenApi:
             Chunk upload result
         """
         try:
-            files = {"chunk": (f"chunk_{chunk_index}", chunk, "application/octet-stream")}
+            files = {
+                "chunk": (f"chunk_{chunk_index}", chunk, "application/octet-stream")
+            }
             headers = {
                 "Chunk-Session-Id": session_id,
                 "Chunk-Size": str(chunk_size),
                 "Chunk-Index": str(chunk_index),
             }
 
-            response = await self.client.post("/files/chunk-upload/part", files=files, headers=headers)
+            response = await self.client.post(
+                "/files/chunk-upload/part", files=files, headers=headers
+            )
             response.raise_for_status()
 
             return {"data": response.json()}
 
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 401:
-                raise ZenAuthenticationError("Invalid API key")
+                raise ZenAuthenticationError("Invalid API key") from e
             else:
-                raise ZenNetworkError(f"Chunk upload failed: {e.response.text}")
+                raise ZenNetworkError(f"Chunk upload failed: {e.response.text}") from e
         except httpx.RequestError as e:
-            raise ZenNetworkError(f"Network error: {str(e)}")
+            raise ZenNetworkError(f"Network error: {str(e)}") from e
 
     async def close(self) -> None:
         """Close the HTTP client."""
         await self.client.aclose()
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> "ZenApi":
         """Async context manager entry."""
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(
+            self,
+            exc_type: Optional[type],
+            exc_val: Optional[BaseException],
+            exc_tb: Optional[Any],
+    ) -> None:
         """Async context manager exit."""
         await self.close()

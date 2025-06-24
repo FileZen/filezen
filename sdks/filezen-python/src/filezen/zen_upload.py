@@ -4,9 +4,9 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
-from .constants import MULTIPART_THRESHOLD, MULTIPART_CHUNK_SIZE
+from .constants import MULTIPART_CHUNK_SIZE, MULTIPART_THRESHOLD
 from .zen_api import ZenApi
-from .zen_error import ZenUploadError, ZenError
+from .zen_error import ZenError, ZenUploadError
 from .zen_file import ZenFile
 
 
@@ -19,6 +19,7 @@ class UploadOptions(BaseModel):
 
     class Config:
         """Pydantic configuration."""
+
         extra = "forbid"
 
 
@@ -41,6 +42,7 @@ class ZenUpload(BaseModel):
 
     class Config:
         """Pydantic configuration."""
+
         arbitrary_types_allowed = True
 
     async def upload(self) -> "ZenUpload":
@@ -49,8 +51,12 @@ class ZenUpload(BaseModel):
         Returns:
             Self with updated file information
         """
-        if not self.api or not self.source or not self.options:
-            raise ZenUploadError("Upload not properly initialized")
+        if self.api is None:
+            raise ZenUploadError("Upload not properly initialized: api is None")
+        if self.source is None:
+            raise ZenUploadError("Upload not properly initialized: source is None")
+        if self.options is None:
+            raise ZenUploadError("Upload not properly initialized: options is None")
 
         try:
             # Determine if we should use multipart upload
@@ -72,11 +78,17 @@ class ZenUpload(BaseModel):
 
     async def _regular_upload(self) -> None:
         """Perform a regular upload."""
+        assert self.api is not None
+        assert self.source is not None
+        assert self.options is not None
         # Perform actual upload
-        result = await self.api.upload_file(self.source, {
-            "name": self.options.name,
-            "mimeType": self.options.mime_type or "application/octet-stream",
-        })
+        result = await self.api.upload_file(
+            self.source,
+            {
+                "name": self.options.name,
+                "mimeType": self.options.mime_type or "application/octet-stream",
+            },
+        )
 
         if result.get("error"):
             raise ZenUploadError(result["error"].get("message", "Upload failed"))
@@ -86,16 +98,25 @@ class ZenUpload(BaseModel):
 
     async def _multipart_upload(self) -> None:
         """Perform a multipart upload for large files."""
+        assert self.api is not None
+        assert self.source is not None
+        assert self.options is not None
         # Initialize multipart upload
-        init_result = await self.api.initialize_multipart_upload({
-            "fileName": self.options.name,
-            "mimeType": self.options.mime_type or "application/octet-stream",
-            "totalSize": self.size,
-            "chunkSize": MULTIPART_CHUNK_SIZE,
-        })
+        init_result = await self.api.initialize_multipart_upload(
+            {
+                "fileName": self.options.name,
+                "mimeType": self.options.mime_type or "application/octet-stream",
+                "totalSize": self.size,
+                "chunkSize": MULTIPART_CHUNK_SIZE,
+            }
+        )
 
         if init_result.get("error"):
-            raise ZenUploadError(init_result["error"].get("message", "Multipart upload initialization failed"))
+            raise ZenUploadError(
+                init_result["error"].get(
+                    "message", "Multipart upload initialization failed"
+                )
+            )
 
         session_id = init_result["data"]["id"]
         total_chunks = (self.size + MULTIPART_CHUNK_SIZE - 1) // MULTIPART_CHUNK_SIZE
@@ -109,10 +130,16 @@ class ZenUpload(BaseModel):
             chunk_size = len(chunk)
 
             # Upload chunk
-            chunk_result = await self.api.upload_chunk(session_id, chunk, current_chunk_index, chunk_size)
+            chunk_result = await self.api.upload_chunk(
+                session_id, chunk, current_chunk_index, chunk_size
+            )
 
             if chunk_result.get("error"):
-                raise ZenUploadError(chunk_result["error"].get("message", f"Chunk {current_chunk_index} upload failed"))
+                raise ZenUploadError(
+                    chunk_result["error"].get(
+                        "message", f"Chunk {current_chunk_index} upload failed"
+                    )
+                )
 
             chunk_data = chunk_result["data"]
 
@@ -124,7 +151,9 @@ class ZenUpload(BaseModel):
                 break
 
             # Move to next chunk
-            current_chunk_index = chunk_data.get("nextChunkIndex", current_chunk_index + 1)
+            current_chunk_index = chunk_data.get(
+                "nextChunkIndex", current_chunk_index + 1
+            )
 
         if not self.file:
             raise ZenUploadError("Multipart upload did not complete as expected")

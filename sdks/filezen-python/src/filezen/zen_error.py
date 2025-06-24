@@ -7,10 +7,10 @@ class ZenError(Exception):
     """Base exception for FileZen SDK errors."""
 
     def __init__(
-            self,
-            message: str,
-            code: Optional[str] = None,
-            details: Optional[Dict[str, Any]] = None,
+        self,
+        message: str,
+        code: Optional[str] = None,
+        details: Optional[Dict[str, Any]] = None,
     ) -> None:
         """Initialize ZenError.
 

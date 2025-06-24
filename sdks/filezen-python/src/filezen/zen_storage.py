@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional, Union
 from pydantic import BaseModel, Field
 
 from .zen_api import ZenApi
-from .zen_upload import ZenUpload, UploadOptions
+from .zen_upload import UploadOptions, ZenUpload
 
 
 class ZenStorageListener(BaseModel):
@@ -20,6 +20,7 @@ class ZenStorageListener(BaseModel):
 
     class Config:
         """Pydantic configuration."""
+
         arbitrary_types_allowed = True
 
 
@@ -32,25 +33,42 @@ class ZenStorageOptions(BaseModel):
 
     class Config:
         """Pydantic configuration."""
+
         extra = "forbid"
 
 
 class ZenStorage:
     """Main storage class for FileZen operations."""
 
-    def __init__(self, options: Optional[Union[Dict[str, Any], ZenStorageOptions]] = None) -> None:
+    def __init__(
+        self, options: Optional[Union[Dict[str, Any], ZenStorageOptions]] = None
+    ) -> None:
         """Initialize ZenStorage.
 
         Args:
             options: Configuration options
         """
         if isinstance(options, dict):
-            options = ZenStorageOptions(**options)
+            options_obj = ZenStorageOptions(
+                api_key=options.get("api_key"),
+                api_url=options.get("api_url"),
+                keep_uploads=bool(options.get("keep_uploads", True)),
+            )
         elif options is None:
-            options = ZenStorageOptions()
+            options_obj = ZenStorageOptions(
+                api_key=None,
+                api_url=None,
+                keep_uploads=True,
+            )
+        else:
+            options_obj = ZenStorageOptions(
+                api_key=options.api_key,
+                api_url=options.api_url,
+                keep_uploads=options.keep_uploads,
+            )
 
-        self.options = options
-        self.api = ZenApi(options.model_dump())
+        self.options = options_obj
+        self.api = ZenApi(options_obj.model_dump())
         self.listeners: List[ZenStorageListener] = []
         self.uploads: Dict[str, ZenUpload] = {}
 
@@ -80,7 +98,8 @@ class ZenStorage:
     def active_uploads(self) -> List[ZenUpload]:
         """Get active uploads."""
         return [
-            upload for upload in self.uploads.values()
+            upload
+            for upload in self.uploads.values()
             if not upload.error and not upload.is_completed
         ]
 
@@ -99,7 +118,11 @@ class ZenStorage:
                 except Exception as e:
                     print(f"Listener error in {event}: {e}")
 
-    def build_upload(self, source: bytes, options: Optional[Union[Dict[str, Any], UploadOptions]] = None) -> ZenUpload:
+    def build_upload(
+        self,
+        source: bytes,
+        options: Optional[Union[Dict[str, Any], UploadOptions]] = None,
+    ) -> ZenUpload:
         """Build an upload object.
 
         Args:
@@ -124,6 +147,10 @@ class ZenStorage:
             api=self.api,
             source=source,
             options=options,
+            file=None,
+            error=None,
+            is_completed=False,
+            is_cancelled=False,
         )
 
         # Store upload if keep_uploads is enabled
@@ -133,7 +160,11 @@ class ZenStorage:
 
         return upload
 
-    async def upload(self, source: bytes, options: Optional[Union[Dict[str, Any], UploadOptions]] = None) -> ZenUpload:
+    async def upload(
+        self,
+        source: bytes,
+        options: Optional[Union[Dict[str, Any], UploadOptions]] = None,
+    ) -> ZenUpload:
         """Upload a single file.
 
         Args:
@@ -180,6 +211,7 @@ class ZenStorage:
 
         # Upload all files concurrently
         import asyncio
+
         tasks = [upload.upload() for upload in upload_objects]
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
@@ -204,8 +236,8 @@ class ZenStorage:
         Returns:
             Signed URL string
         """
-        import hmac
         import hashlib
+        import hmac
         import time
         from urllib.parse import urlencode
 
@@ -215,6 +247,7 @@ class ZenStorage:
 
         # Decode API key to get credentials
         import base64
+
         api_key = self.api.api_key
         if not api_key:
             raise ValueError("API key is required for signed URL generation")
@@ -231,9 +264,7 @@ class ZenStorage:
 
         # Generate signature
         signature = hmac.new(
-            secret_key.encode("utf-8"),
-            string_to_sign.encode("utf-8"),
-            hashlib.sha256
+            secret_key.encode("utf-8"), string_to_sign.encode("utf-8"), hashlib.sha256
         ).hexdigest()
 
         # Build signed URL
@@ -260,16 +291,21 @@ class ZenStorage:
             True if deletion was successful
         """
         result = await self.api.delete_file_by_url(url)
-        return result.get("data", False)
+        return bool(result.get("data", False))
 
     async def close(self) -> None:
         """Close the storage and cleanup resources."""
         await self.api.close()
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> "ZenStorage":
         """Async context manager entry."""
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(
+        self,
+        exc_type: Optional[type],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[Any],
+    ) -> None:
         """Async context manager exit."""
         await self.close()
