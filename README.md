@@ -16,6 +16,11 @@ This repository includes the following example applications:
 - [`nodejs-server`](./apps/nodejs-server/) - Complete Node.js/Express server example with FileZen SDK integration
 - [`nestjs-app`](./apps/nestjs-app/) - NestJS application example with FileZen decorators and modules
 
+### SDKs
+
+- [`filezen-js`](./sdks/filezen-js/) - JavaScript/TypeScript SDK for FileZen
+- [`filezen-python`](./sdks/filezen-python/) - Python SDK for FileZen with async support and type safety
+
 ## Getting Started
 
 1. Clone this repository
