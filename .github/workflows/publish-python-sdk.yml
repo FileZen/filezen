@@ -48,7 +48,7 @@ jobs:
     - name: Type check with mypy
       run: |
         cd sdks/filezen-python
-        mypy --no-strict-optional src/
+        mypy --no-strict-optional src/filezen/*.py
 
   build-and-publish:
     needs: test
