@@ -1,6 +1,6 @@
-# FileZen Node.js Server Example
+# FileZen H3 Server Example
 
-This is a complete Node.js server example demonstrating how to use the FileZen JavaScript SDK for file uploads and management.
+This is a complete H3 server example demonstrating how to use the FileZen JavaScript SDK for file uploads and management. Built with [H3](https://v1.h3.dev/guide), a lightweight and composable server framework.
 
 ## Features
 
@@ -10,6 +10,17 @@ This is a complete Node.js server example demonstrating how to use the FileZen J
 - **Signed URL Generation**: Generate signed URLs for secure uploads
 - **File Deletion**: Delete files by URL
 - **Interactive Test Interface**: HTML page for testing all endpoints with progress indicators
+
+## Why H3?
+
+This example uses H3 for several advantages:
+
+- **Lightweight**: Minimal overhead and fast startup
+- **Universal**: Works with Node.js, Bun, Deno, and edge runtimes
+- **Composable**: Event-driven architecture with reusable handlers
+- **Modern**: Built-in TypeScript support and ESM-first
+- **Cross-platform**: Designed for multiple JavaScript runtimes
+- **Performance**: Optimized for speed and efficiency
 
 ## Setup
 
@@ -27,18 +38,26 @@ This is a complete Node.js server example demonstrating how to use the FileZen J
    The API key is automatically picked up from environment variables by the SDK.
 
 3. **Start the server:**
+   
+   **Development (recommended):**
    ```bash
    npm run dev
    ```
+   
+   **Production:**
+   ```bash
+   npm run build
+   npm start
+   ```
 
-   The server will start on `http://localhost:3001`
+   The server will start on `http://localhost:3003`
 
 ## API Endpoints
 
 ### 1. Single File Upload
 **POST** `/api/files/upload`
 
-Upload a single file.
+Upload a single file using multipart form data.
 
 **Request:**
 - Content-Type: `multipart/form-data`
@@ -47,7 +66,7 @@ Upload a single file.
 
 **Example:**
 ```bash
-curl -X POST http://localhost:3001/api/files/upload \
+curl -X POST http://localhost:3003/api/files/upload \
   -F "file=@/path/to/your/file.jpg"
 ```
 
@@ -76,7 +95,7 @@ Upload multiple files simultaneously.
 
 **Example:**
 ```bash
-curl -X POST http://localhost:3001/api/files/bulk-upload \
+curl -X POST http://localhost:3003/api/files/bulk-upload \
   -F "files=@/path/to/file1.jpg" \
   -F "files=@/path/to/file2.png"
 ```
@@ -119,7 +138,7 @@ Upload a file directly from a URL.
 
 **Example:**
 ```bash
-curl -X POST http://localhost:3001/api/files/upload-from-url \
+curl -X POST http://localhost:3003/api/files/upload-from-url \
   -H "Content-Type: application/json" \
   -d '{
     "url": "https://example.com/image.jpg",
@@ -157,7 +176,7 @@ Generate a signed URL for secure file uploads.
 
 **Example:**
 ```bash
-curl -X POST http://localhost:3001/api/files/generate-signed-url \
+curl -X POST http://localhost:3003/api/files/generate-signed-url \
   -H "Content-Type: application/json" \
   -d '{
     "fileKey": "document.pdf",
@@ -190,7 +209,7 @@ Delete a file by its URL.
 
 **Example:**
 ```bash
-curl -X DELETE http://localhost:3001/api/files/delete \
+curl -X DELETE http://localhost:3003/api/files/delete \
   -H "Content-Type: application/json" \
   -d '{
     "url": "https://filezen.com/file-url"
@@ -205,15 +224,61 @@ curl -X DELETE http://localhost:3001/api/files/delete \
 }
 ```
 
-## Interactive Test Interface
+## Error Handling
 
-Visit `http://localhost:3001` in your browser to access an interactive HTML interface for testing all endpoints. The interface includes:
+The server includes comprehensive error handling with proper HTTP status codes and detailed error messages:
 
-- File upload forms with drag-and-drop support
-- Real-time response display with progress indicators
-- Error handling and validation
-- Easy testing of all API endpoints
-- Visual feedback during operations
+### Upload-Specific Error Checking
+
+The server properly validates FileZen SDK upload results:
+
+1. **Single File Upload Errors**: Checks `upload.error` before returning success
+2. **Bulk Upload Errors**: Validates each upload in the batch and provides detailed failure information
+3. **Network Errors**: Handles fetch failures for URL uploads
+4. **Validation Errors**: Returns 400 status for missing required parameters
+
+### Error Types Handled
+
+- Missing files or invalid requests (400 Bad Request)
+- Network errors during uploads (500 Internal Server Error)
+- File size limits and validation errors
+- Invalid URLs for external uploads (400 Bad Request)
+- SDK upload failures (500 Internal Server Error)
+- API authentication failures
+
+### Standard Error Response
+```json
+{
+  "statusCode": 400,
+  "statusMessage": "Error description",
+  "data": {
+    "message": "Detailed error message"
+  }
+}
+```
+
+### Bulk Upload Error Response
+For bulk uploads, if some files fail while others succeed:
+
+```json
+{
+  "statusCode": 500,
+  "statusMessage": "Some uploads failed",
+  "data": {
+    "message": "2 out of 5 uploads failed",
+    "failures": [
+      {
+        "name": "failed-file1.jpg",
+        "error": "File too large"
+      },
+      {
+        "name": "failed-file2.pdf",
+        "error": "Invalid file type"
+      }
+    ]
+  }
+}
+```
 
 ## SDK Usage Examples
 
@@ -282,87 +347,106 @@ const signedUrl = zenStorage.generateSignedUrl({
 await zenStorage.deleteByUrl('https://filezen.com/file-url');
 ```
 
-## Error Handling
-
-The server includes comprehensive error handling with proper HTTP status codes and detailed error messages:
-
-### Upload-Specific Error Checking
-
-The server now properly validates FileZen SDK upload results:
-
-1. **Single File Upload Errors**: Checks `upload.error` before returning success
-2. **Bulk Upload Errors**: Validates each upload in the batch and provides detailed failure information
-3. **Network Errors**: Handles fetch failures for URL uploads
-4. **Validation Errors**: Returns 400 status for missing required parameters
-
-### Error Types Handled
-
-- Missing files or invalid requests (400 Bad Request)
-- Network errors during uploads (500 Internal Server Error)
-- File size limits (100MB per file)
-- Invalid URLs for external uploads (400 Bad Request)
-- SDK upload failures (500 Internal Server Error)
-- API authentication failures
-
-### Standard Error Response
-```json
-{
-  "error": "Error type",
-  "message": "Detailed error message"
-}
-```
-
-### Bulk Upload Error Response
-For bulk uploads, if some files fail while others succeed, the server returns detailed error information:
-
-```json
-{
-  "error": "Some uploads failed",
-  "message": "2 out of 5 uploads failed",
-  "failures": [
-    {
-      "name": "failed-file1.jpg",
-      "error": "File too large"
-    },
-    {
-      "name": "failed-file2.pdf",
-      "error": "Invalid file type"
-    }
-  ]
-}
-```
-
-This ensures you can identify which specific files failed and why, allowing for targeted retry operations.
-
-## File Size Limits
-
-- **Single file upload**: 100MB maximum
-- **Bulk upload**: Up to 10 files, 100MB each
-- **URL upload**: No size limit (depends on source URL)
-
 ## Development
 
-- **TypeScript**: Full TypeScript support with type safety
-- **Hot reload**: Development server with automatic restarts
-- **Error handling**: Comprehensive error handling and logging
-- **CORS**: Configured for local development
-- **Progress indicators**: Visual feedback for all operations
+- **Development**: `npm run dev` (uses listhen with auto-reload)
+- **Build**: `npm run build`
+- **Production**: `npm start` (uses dotenv to load .env file)
 
-## Production Considerations
+## Environment Variables
 
-- Set appropriate file size limits based on your needs
-- Configure proper CORS settings for production
-- Add authentication and authorization as needed
-- Consider rate limiting for API endpoints
-- Set up proper logging and monitoring
+The server requires only one environment variable:
+
+```env
+FILEZEN_API_KEY=your_filezen_api_key_here
+```
+
+Create a `.env` file in the root directory with your FileZen API key. The server automatically loads this file using dotenv.
+
+## H3-Specific Features
+
+### Event Handlers
+H3 uses event handlers instead of middleware:
+```typescript
+defineEventHandler(async (event) => {
+  // Handle request
+  return response;
+});
+```
+
+### Built-in Utilities
+- `readMultipartFormData()`: Parse multipart form data
+- `readBody()`: Parse request body with type safety
+- `createError()`: Create structured errors
+- `serveStatic()`: Serve static files
+
+### Router System
+```typescript
+const router = createRouter();
+router.post('/api/endpoint', handler);
+app.use(router);
+```
+
+## Key Differences from Express/Fastify
+
+1. **Event-Driven**: Uses event handlers instead of middleware/plugins
+2. **Built-in Utilities**: Native multipart and body parsing
+3. **Error Handling**: Structured error system with `createError()`
+4. **Static Files**: Built-in `serveStatic` utility
+5. **Universal**: Runs on multiple JavaScript runtimes
+6. **Lightweight**: Minimal dependencies and overhead
+7. **Type Safety**: Built-in TypeScript support
+
+## Architecture
+
+The server uses:
+- **H3**: Universal server framework
+- **listhen**: Development server with auto-reload
+- **@filezen/js**: FileZen SDK for file operations
+- **Built-in utilities**: For multipart parsing and error handling
+
+## Testing
+
+Visit `http://localhost:3003/` to access the interactive test interface where you can:
+- Upload single files
+- Upload multiple files
+- Upload files from URLs
+- Generate signed URLs
+- Delete files
+
+The test interface provides real-time feedback and shows the API responses.
+
+## Production Deployment
+
+H3 apps can be deployed to various platforms:
+
+### Node.js
+```bash
+npm run build
+npm start
+```
+
+### Bun
+```bash
+bun run build
+bun dist/index.js
+```
+
+### Deno
+```bash
+deno run --allow-net --allow-read dist/index.js
+```
+
+### Edge Runtimes
+H3 can be adapted to work with Cloudflare Workers, Vercel Edge, and other edge runtimes using adapters.
 
 ## Troubleshooting
 
 ### Common Issues
 
 1. **API Key Error**: Ensure your `FILEZEN_API_KEY` is set correctly in environment variables
-2. **File Size Limits**: Check multer and FileZen file size limits
-3. **CORS Issues**: Configure CORS properly for your frontend
+2. **Module Resolution**: H3 works best with ESM, ensure proper module configuration
+3. **Runtime Compatibility**: Verify your JavaScript runtime supports H3
 4. **Memory Issues**: Use `keepUploads: false` for server-side usage
 
 ### Debug Mode

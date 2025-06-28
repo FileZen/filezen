@@ -38,6 +38,14 @@ router.post(
         mimeType: file.mimetype,
       });
 
+      if (upload.error) {
+        res.status(500).json({
+          error: 'Upload failed',
+          message: upload.error.message,
+        });
+        return;
+      }
+
       res.json({
         success: true,
         file: upload.file,
@@ -78,6 +86,20 @@ router.post(
 
       // Perform bulk upload
       const uploads = await zenStorage.bulkUpload(...uploadItems);
+
+      // Check for any upload errors
+      const failedUploads = uploads.filter(upload => upload.error);
+      if (failedUploads.length > 0) {
+        res.status(500).json({
+          error: 'Some uploads failed',
+          message: `${failedUploads.length} out of ${uploads.length} uploads failed`,
+          failures: failedUploads.map(upload => ({
+            name: upload.name,
+            error: upload.error?.message
+          }))
+        });
+        return;
+      }
 
       res.json({
         success: true,
@@ -124,6 +146,14 @@ router.post(
         name: name || `file-${Date.now()}`,
         mimeType: contentType,
       });
+
+      if (upload.error) {
+        res.status(500).json({
+          error: 'Upload failed',
+          message: upload.error.message,
+        });
+        return;
+      }
 
       res.json({
         success: true,

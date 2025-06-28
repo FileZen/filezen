@@ -1,6 +1,6 @@
-# FileZen Node.js Server Example
+# FileZen Fastify Server Example
 
-This is a complete Node.js server example demonstrating how to use the FileZen JavaScript SDK for file uploads and management.
+This is a complete Fastify server example demonstrating how to use the FileZen JavaScript SDK for file uploads and management.
 
 ## Features
 
@@ -10,6 +10,16 @@ This is a complete Node.js server example demonstrating how to use the FileZen J
 - **Signed URL Generation**: Generate signed URLs for secure uploads
 - **File Deletion**: Delete files by URL
 - **Interactive Test Interface**: HTML page for testing all endpoints with progress indicators
+
+## Fastify vs Express
+
+This example uses Fastify instead of Express for better performance and TypeScript support:
+
+- **Performance**: Fastify is faster than Express with better throughput
+- **TypeScript**: Native TypeScript support with better type safety
+- **Plugins**: Modern plugin system instead of middleware
+- **Validation**: Built-in JSON schema validation
+- **Logging**: Built-in structured logging
 
 ## Setup
 
@@ -31,7 +41,7 @@ This is a complete Node.js server example demonstrating how to use the FileZen J
    npm run dev
    ```
 
-   The server will start on `http://localhost:3001`
+   The server will start on `http://localhost:3002`
 
 ## API Endpoints
 
@@ -47,7 +57,7 @@ Upload a single file.
 
 **Example:**
 ```bash
-curl -X POST http://localhost:3001/api/files/upload \
+curl -X POST http://localhost:3002/api/files/upload \
   -F "file=@/path/to/your/file.jpg"
 ```
 
@@ -76,7 +86,7 @@ Upload multiple files simultaneously.
 
 **Example:**
 ```bash
-curl -X POST http://localhost:3001/api/files/bulk-upload \
+curl -X POST http://localhost:3002/api/files/bulk-upload \
   -F "files=@/path/to/file1.jpg" \
   -F "files=@/path/to/file2.png"
 ```
@@ -119,7 +129,7 @@ Upload a file directly from a URL.
 
 **Example:**
 ```bash
-curl -X POST http://localhost:3001/api/files/upload-from-url \
+curl -X POST http://localhost:3002/api/files/upload-from-url \
   -H "Content-Type: application/json" \
   -d '{
     "url": "https://example.com/image.jpg",
@@ -157,7 +167,7 @@ Generate a signed URL for secure file uploads.
 
 **Example:**
 ```bash
-curl -X POST http://localhost:3001/api/files/generate-signed-url \
+curl -X POST http://localhost:3002/api/files/generate-signed-url \
   -H "Content-Type: application/json" \
   -d '{
     "fileKey": "document.pdf",
@@ -190,7 +200,7 @@ Delete a file by its URL.
 
 **Example:**
 ```bash
-curl -X DELETE http://localhost:3001/api/files/delete \
+curl -X DELETE http://localhost:3002/api/files/delete \
   -H "Content-Type: application/json" \
   -d '{
     "url": "https://filezen.com/file-url"
@@ -205,15 +215,84 @@ curl -X DELETE http://localhost:3001/api/files/delete \
 }
 ```
 
-## Interactive Test Interface
+## Error Handling
 
-Visit `http://localhost:3001` in your browser to access an interactive HTML interface for testing all endpoints. The interface includes:
+All endpoints return standardized error responses with proper HTTP status codes:
 
-- File upload forms with drag-and-drop support
-- Real-time response display with progress indicators
-- Error handling and validation
-- Easy testing of all API endpoints
-- Visual feedback during operations
+### Standard Error Response
+```json
+{
+  "error": "Error type",
+  "message": "Detailed error message"
+}
+```
+
+### Upload-Specific Error Handling
+
+The server implements comprehensive error checking for FileZen SDK upload operations:
+
+1. **Single File Upload Errors**: Checks `upload.error` before returning success
+2. **Bulk Upload Errors**: Validates each upload in the batch and provides detailed failure information
+3. **Network Errors**: Handles fetch failures for URL uploads
+4. **Validation Errors**: Returns 400 status for missing required parameters
+
+### Bulk Upload Error Response
+For bulk uploads, if some files fail while others succeed, the server returns detailed error information:
+
+```json
+{
+  "error": "Some uploads failed",
+  "message": "2 out of 5 uploads failed",
+  "failures": [
+    {
+      "name": "failed-file1.jpg",
+      "error": "File too large"
+    },
+    {
+      "name": "failed-file2.pdf",
+      "error": "Invalid file type"
+    }
+  ]
+}
+```
+
+This ensures you can identify which specific files failed and why, allowing for targeted retry operations.
+
+## Development
+
+- **Build**: `npm run build`
+- **Start**: `npm start`
+- **Development**: `npm run dev`
+
+## Key Differences from Express Version
+
+1. **Plugin System**: Uses Fastify's plugin system instead of Express middleware
+2. **Multipart Handling**: Uses `@fastify/multipart` instead of `multer`
+3. **CORS**: Uses `@fastify/cors` plugin
+4. **Static Files**: Uses `@fastify/static` plugin
+5. **Type Safety**: Better TypeScript integration with request/reply typing
+6. **Performance**: Generally faster than Express
+7. **Built-in Validation**: JSON schema validation support (not used in this example)
+
+## Architecture
+
+The server uses:
+- **Fastify**: Fast and efficient web framework
+- **@fastify/multipart**: For handling file uploads
+- **@fastify/cors**: For Cross-Origin Resource Sharing
+- **@fastify/static**: For serving static files
+- **@filezen/js**: FileZen SDK for file operations
+
+## Testing
+
+Visit `http://localhost:3002/` to access the interactive test interface where you can:
+- Upload single files
+- Upload multiple files
+- Upload files from URLs
+- Generate signed URLs
+- Delete files
+
+The test interface provides real-time feedback and shows the API responses.
 
 ## SDK Usage Examples
 
@@ -280,95 +359,4 @@ const signedUrl = zenStorage.generateSignedUrl({
 ### Delete File
 ```typescript
 await zenStorage.deleteByUrl('https://filezen.com/file-url');
-```
-
-## Error Handling
-
-The server includes comprehensive error handling with proper HTTP status codes and detailed error messages:
-
-### Upload-Specific Error Checking
-
-The server now properly validates FileZen SDK upload results:
-
-1. **Single File Upload Errors**: Checks `upload.error` before returning success
-2. **Bulk Upload Errors**: Validates each upload in the batch and provides detailed failure information
-3. **Network Errors**: Handles fetch failures for URL uploads
-4. **Validation Errors**: Returns 400 status for missing required parameters
-
-### Error Types Handled
-
-- Missing files or invalid requests (400 Bad Request)
-- Network errors during uploads (500 Internal Server Error)
-- File size limits (100MB per file)
-- Invalid URLs for external uploads (400 Bad Request)
-- SDK upload failures (500 Internal Server Error)
-- API authentication failures
-
-### Standard Error Response
-```json
-{
-  "error": "Error type",
-  "message": "Detailed error message"
-}
-```
-
-### Bulk Upload Error Response
-For bulk uploads, if some files fail while others succeed, the server returns detailed error information:
-
-```json
-{
-  "error": "Some uploads failed",
-  "message": "2 out of 5 uploads failed",
-  "failures": [
-    {
-      "name": "failed-file1.jpg",
-      "error": "File too large"
-    },
-    {
-      "name": "failed-file2.pdf",
-      "error": "Invalid file type"
-    }
-  ]
-}
-```
-
-This ensures you can identify which specific files failed and why, allowing for targeted retry operations.
-
-## File Size Limits
-
-- **Single file upload**: 100MB maximum
-- **Bulk upload**: Up to 10 files, 100MB each
-- **URL upload**: No size limit (depends on source URL)
-
-## Development
-
-- **TypeScript**: Full TypeScript support with type safety
-- **Hot reload**: Development server with automatic restarts
-- **Error handling**: Comprehensive error handling and logging
-- **CORS**: Configured for local development
-- **Progress indicators**: Visual feedback for all operations
-
-## Production Considerations
-
-- Set appropriate file size limits based on your needs
-- Configure proper CORS settings for production
-- Add authentication and authorization as needed
-- Consider rate limiting for API endpoints
-- Set up proper logging and monitoring
-
-## Troubleshooting
-
-### Common Issues
-
-1. **API Key Error**: Ensure your `FILEZEN_API_KEY` is set correctly in environment variables
-2. **File Size Limits**: Check multer and FileZen file size limits
-3. **CORS Issues**: Configure CORS properly for your frontend
-4. **Memory Issues**: Use `keepUploads: false` for server-side usage
-
-### Debug Mode
-
-Enable debug logging by setting `NODE_ENV=development` in your `.env` file.
-
-## License
-
-This example is part of the FileZen SDK and follows the same license terms. 
+``` 
