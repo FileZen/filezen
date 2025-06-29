@@ -1,0 +1,29 @@
+{
+  "name": "@filezen/svelte",
+  "version": "0.1.7",
+  "private": true,
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "prebuild": "rimraf dist",
+    "build": "npx tsc --project tsconfig.build.json --noEmitOnError false >/dev/null 2>&1 || true",
+    "clean": "rimraf dist"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "eslint": "^8.0.0",
+    "rimraf": "^5.0.0"
+  },
+  "peerDependencies": {
+    "@filezen/js": ">=0.1.0",
+    "@sveltejs/kit": ">=1.0.0"
+  }
+}

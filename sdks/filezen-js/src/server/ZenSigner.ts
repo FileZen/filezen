@@ -1,4 +1,4 @@
-import { createHmac } from 'crypto';
+import { Sha256 } from '@aws-crypto/sha256-js';
 import { ZenApi } from '../ZenApi';
 
 export type ZenSignerGenerateOptions = {
@@ -24,9 +24,15 @@ export class ZenSigner {
     const expiresAt =
       Math.floor(Date.now() / 1000) + (options.expiresIn ?? 3600);
     const stringToSign = [options.fileKey, expiresAt].join('/n');
-    const signature = createHmac('sha256', this.credentials.secret)
-      .update(stringToSign)
-      .digest('hex');
+
+    const hash = new Sha256(this.credentials.secret);
+    hash.update(stringToSign);
+    const signatureDigest = hash.digestSync();
+    const signature = signatureDigest.reduce(
+      (acc, byte) => acc + byte.toString(16).padStart(2, '0'),
+      '',
+    );
+
     const signedUrl = new URL(
       `${this.api.apiUrl}/${options.path.startsWith('/') ? options.path.substring(1) : options.path}`,
     );
