@@ -94,11 +94,9 @@ const requestMiddleware = async (event: RequestEvent) => {
   // Return metadata to be passed to FileZen
 };
 
-const router = createZenSvelteRouter(zenApi, {
+export const { POST, DELETE } = createZenSvelteRouter(zenApi, {
   onRequest: requestMiddleware,
 });
-
-export const { POST, DELETE } = router;
 ```
 
 ## Building for Production

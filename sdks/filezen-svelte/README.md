@@ -38,11 +38,9 @@ const requestMiddleware = async (event: RequestEvent) => {
    */
 };
 
-const router = createZenSvelteRouter(zenApi, {
+export const { POST, DELETE } = createZenSvelteRouter(zenApi, {
   onRequest: requestMiddleware,
 });
-
-export const { POST, DELETE } = router;
 ```
 
 ### 2. Use in Your Svelte Components
