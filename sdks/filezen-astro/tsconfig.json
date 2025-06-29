@@ -5,19 +5,20 @@
     "sourceMap": true,
     "declaration": true,
     "declarationMap": true,
-    "skipLibCheck": true,
-    "noEmitOnError": false,
-    "paths": {}
+    "paths": {
+      "@filezen/js": [
+        "../filezen-js/src"
+      ],
+      "@filezen/js/server": [
+        "../filezen-js/src/server"
+      ]
+    }
   },
   "include": [
-    "src/**/*"
+    "src"
   ],
   "exclude": [
     "node_modules",
-    "dist",
-    "**/*.test.ts",
-    "**/*.test.tsx",
-    "**/*.spec.ts",
-    "**/*.spec.tsx"
+    "dist"
   ]
 } 

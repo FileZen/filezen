@@ -22,7 +22,6 @@
   "workspaces": [
     "apps/*",
     "sdks/*",
-    "packages/*",
-    "docs"
+    "packages/*"
   ]
 }

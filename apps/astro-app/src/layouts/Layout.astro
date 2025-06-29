@@ -1,0 +1,98 @@
+---
+export interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description = "FileZen file upload example with Astro" } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="description" content={description} />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>{title}</title>
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>
+
+<style is:global>
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 
+                 Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background: #111827;
+    color: #e5e7eb;
+    min-height: 100vh;
+  }
+
+  body {
+    min-height: 100vh;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+    min-height: 100vh;
+  }
+
+  .header {
+    text-align: center;
+    margin-bottom: 3rem;
+  }
+
+  .header h1 {
+    font-size: clamp(2rem, 4vw, 2.5rem);
+    font-weight: 700;
+    margin-bottom: 1rem;
+    color: #f9fafb;
+    letter-spacing: -0.025em;
+  }
+
+  .header p {
+    font-size: 1.125rem;
+    color: #d1d5db;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .header a {
+    color: #818cf8;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s ease;
+  }
+
+  .header a:hover {
+    color: #a5b4fc;
+    text-decoration: underline;
+  }
+
+  @media (max-width: 768px) {
+    .container {
+      padding: 1rem;
+    }
+
+    .header {
+      margin-bottom: 2rem;
+    }
+
+    .header p {
+      font-size: 1rem;
+    }
+  }
+</style> 

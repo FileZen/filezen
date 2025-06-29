@@ -1,6 +1,6 @@
 {
   "name": "@filezen/react",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "private": true,
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -8,16 +8,20 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
       "default": "./dist/index.js"
     }
   },
   "scripts": {
-    "prebuild": "rimraf dist",
-    "build": "npx tsc --project tsconfig.build.json --noEmitOnError false >/dev/null 2>&1 || true",
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "check-types": "tsc --noEmit",
     "clean": "rimraf dist"
   },
   "devDependencies": {
     "@repo/eslint-config": "*",
+    "@repo/tsup-config": "*",
     "@repo/typescript-config": "*",
     "@turbo/gen": "^2.5.0",
     "@types/node": "^22.15.3",

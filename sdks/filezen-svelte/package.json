@@ -1,6 +1,6 @@
 {
   "name": "@filezen/svelte",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "private": true,
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -8,19 +8,22 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
       "default": "./dist/index.js"
     }
   },
   "scripts": {
-    "prebuild": "rimraf dist",
-    "build": "npx tsc --project tsconfig.build.json --noEmitOnError false >/dev/null 2>&1 || true",
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "check-types": "tsc --noEmit",
     "clean": "rimraf dist"
   },
   "devDependencies": {
+    "@repo/tsup-config": "*",
     "@types/node": "^20.0.0",
     "typescript": "^5.0.0",
-    "eslint": "^8.0.0",
-    "rimraf": "^5.0.0"
+    "eslint": "^8.0.0"
   },
   "peerDependencies": {
     "@filezen/js": ">=0.1.0",

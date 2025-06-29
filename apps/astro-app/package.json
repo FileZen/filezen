@@ -1,0 +1,25 @@
+{
+  "name": "astro-app",
+  "type": "module",
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "astro dev --port 4321",
+    "start": "astro dev --port 4321",
+    "build": "astro check && astro build",
+    "preview": "astro preview",
+    "astro": "astro",
+    "check-types": "astro check"
+  },
+  "dependencies": {
+    "@astrojs/check": "^0.9.4",
+    "@astrojs/react": "^4.3.0",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "astro": "^5.10.1",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "typescript": "^5.0.0"
+  },
+  "devDependencies": {
+  }
+} 

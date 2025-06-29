@@ -1,0 +1,35 @@
+{
+  "extends": "astro/tsconfigs/strict",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ],
+      "@/components/*": [
+        "./src/components/*"
+      ],
+      "@/layouts/*": [
+        "./src/layouts/*"
+      ],
+      "@filezen/js": [
+        "../../sdks/filezen-js/src"
+      ],
+      "@filezen/astro": [
+        "../../sdks/filezen-astro/src"
+      ]
+    },
+    "jsx": "react-jsx",
+    "jsxImportSource": "react",
+    "types": [
+      "astro/client"
+    ]
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+} 

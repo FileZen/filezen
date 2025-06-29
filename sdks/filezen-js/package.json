@@ -1,6 +1,6 @@
 {
   "name": "@filezen/js",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "private": true,
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -8,20 +8,26 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
       "default": "./dist/index.js"
     },
     "./server": {
       "types": "./dist/server/index.d.ts",
+      "import": "./dist/server/index.mjs",
+      "require": "./dist/server/index.js",
       "default": "./dist/server/index.js"
     }
   },
   "scripts": {
-    "prebuild": "rimraf dist",
-    "build": "npx tsc --project tsconfig.build.json",
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "check-types": "tsc --noEmit",
     "clean": "rimraf dist"
   },
   "devDependencies": {
     "@repo/eslint-config": "*",
+    "@repo/tsup-config": "*",
     "@repo/typescript-config": "*",
     "@types/node": "^22.15.3",
     "eslint": "^9.26.0",

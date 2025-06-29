@@ -1,10 +1,11 @@
 {
-  "name": "@filezen/next",
-  "version": "0.1.8",
+  "name": "@filezen/astro",
+  "version": "0.1.0",
   "private": true,
-  "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
-  "types": "./dist/index.d.ts",
+  "description": "FileZen SDK for Astro applications",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -19,17 +20,19 @@
     "check-types": "tsc --noEmit",
     "clean": "rimraf dist"
   },
+  "keywords": [
+    "filezen",
+    "astro",
+    "file-upload",
+    "typescript"
+  ],
   "devDependencies": {
     "@repo/tsup-config": "*",
-    "@types/react": "^18.2.0",
-    "@types/node": "^20.0.0",
-    "typescript": "^5.0.0",
-    "eslint": "^8.0.0"
+    "astro": "^5.10.1",
+    "typescript": "^5.0.0"
   },
   "peerDependencies": {
     "@filezen/js": ">=0.1.0",
-    "@filezen/react": ">=0.1.0",
-    "next": ">=14.0.0",
-    "react": ">=18.2.0"
+    "astro": "^5.10.1"
   }
 } 

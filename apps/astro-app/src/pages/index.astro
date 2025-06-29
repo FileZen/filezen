@@ -1,0 +1,118 @@
+---
+import Layout from '@/layouts/Layout.astro';
+import FileUpload from '@/components/FileUpload.astro';
+import FileUploadReact from '@/components/FileUploadReact';
+---
+
+<Layout title="FileZen Astro Example">
+  <div class="container">
+    <div class="header">
+      <h1>FileZen Upload Example</h1>
+      <p>
+        This example demonstrates how to use FileZen for file uploads with 
+        <a href="https://astro.build" target="_blank" rel="noopener noreferrer">Astro</a>. 
+        The upload is handled with API routes and server-side processing.
+      </p>
+      <p style="margin-top: 1rem; font-size: 1rem; color: #9ca3af;">
+        Showcasing both pure Astro components and React components within the same app.
+      </p>
+    </div>
+
+    <div class="components-grid">
+      <div class="component-section">
+        <h2>Pure Astro Component</h2>
+        <FileUpload />
+      </div>
+
+      <div class="component-section">
+        <h2>React Component in Astro</h2>
+        <FileUploadReact client:load />
+      </div>
+    </div>
+
+    <div class="features">
+      <h2>Features</h2>
+      <ul>
+        <li>📤 <strong>Drag & Drop</strong>: Intuitive file upload interface</li>
+        <li>🔄 <strong>File Replacement</strong>: Automatically manages previous uploads</li>
+        <li>⚡ <strong>Astro API Routes</strong>: Server-side processing with type safety</li>
+        <li>🎨 <strong>Multi-Framework</strong>: Pure Astro and React components</li>
+        <li>🔧 <strong>TypeScript</strong>: Full type safety throughout</li>
+      </ul>
+    </div>
+  </div>
+</Layout>
+
+<style>
+  .components-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 3rem;
+    margin-bottom: 3rem;
+  }
+
+  .component-section {
+    border: 1px solid #374151;
+    border-radius: 1rem;
+    padding: 2rem;
+    background: rgba(31, 41, 55, 0.3);
+  }
+
+  .component-section h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #f9fafb;
+    margin-bottom: 1.5rem;
+    text-align: center;
+    border-bottom: 1px solid #374151;
+    padding-bottom: 1rem;
+  }
+
+  .features {
+    background: rgba(31, 41, 55, 0.3);
+    border: 1px solid #374151;
+    border-radius: 1rem;
+    padding: 2rem;
+    text-align: center;
+  }
+
+  .features h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #f9fafb;
+    margin-bottom: 1.5rem;
+  }
+
+  .features ul {
+    list-style: none;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .features li {
+    text-align: left;
+    padding: 0.75rem;
+    background: rgba(55, 65, 81, 0.3);
+    border-radius: 0.5rem;
+    border: 1px solid #4b5563;
+  }
+
+  @media (min-width: 768px) {
+    .components-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .features ul {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .features ul {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+</style> 

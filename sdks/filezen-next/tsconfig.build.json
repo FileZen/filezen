@@ -2,12 +2,19 @@
   "extends": "@repo/typescript-config/react-library.json",
   "compilerOptions": {
     "outDir": "dist",
+    "sourceMap": true,
     "declaration": true,
     "declarationMap": true,
-    "sourceMap": true,
-    "paths": {},
     "skipLibCheck": true,
-    "noEmitOnError": false
+    "noEmitOnError": false,
+    "paths": {
+      "@filezen/js": [
+        "../filezen-js/src"
+      ],
+      "@filezen/js/server": [
+        "../filezen-js/src/server"
+      ]
+    }
   },
   "include": [
     "src/**/*"
