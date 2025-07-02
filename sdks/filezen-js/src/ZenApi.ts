@@ -1,6 +1,6 @@
 import axios, { AxiosInstance } from 'axios';
 import { DEFAULT_API_URL } from './constants';
-import { ZenFile, ZenList, ZenUploadSource, ZenUploaderParams } from './types';
+import { ZenFile, ZenList, ZenUploaderParams, ZenUploadSource } from './types';
 import {
   buildZenErrorResult,
   buildZenSuccessResult,

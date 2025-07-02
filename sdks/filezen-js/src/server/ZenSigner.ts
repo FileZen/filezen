@@ -11,9 +11,7 @@ export class ZenSigner {
   private credentials: { key: string; secret: string };
 
   constructor(private readonly api: ZenApi) {
-    const decodedCredentials = Buffer.from(api.apiKey, 'base64')
-      .toString('utf-8')
-      .split(',');
+    const decodedCredentials = atob(api.apiKey).toString().split(',');
     this.credentials = {
       key: decodedCredentials[0]!,
       secret: decodedCredentials[1]!,

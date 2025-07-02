@@ -10,6 +10,7 @@ export const FileUpload = () => {
   const [isUploading, setIsUploading] = React.useState(false);
   const [error, setError] = React.useState<ZenError | null>(null);
   const [uploadResult, setUploadResult] = React.useState<ZenFile | null>(null);
+  const [urlInput, setUrlInput] = React.useState('');
 
   const handleUpload = async (file: File) => {
     setError(null);
@@ -34,6 +35,38 @@ export const FileUpload = () => {
     }
 
     setUploadResult(result.file);
+    setIsUploading(false);
+  };
+
+  const handleUrlUpload = async () => {
+    if (!urlInput.trim()) {
+      setError(new ZenError(-1, 'Please enter a valid URL'));
+      return;
+    }
+
+    setError(null);
+    setIsUploading(true);
+
+    const result = await zenClient.upload(urlInput.trim());
+
+    if (result.error) {
+      setError(result.error);
+      setIsUploading(false);
+      return;
+    }
+
+    if (uploadResult) {
+      zenClient.delete(uploadResult.id).then((result) => {
+        if (result.error) {
+          console.error('Previous file delete failed: ', result.error);
+        } else {
+          console.log('Previous file deleted!');
+        }
+      });
+    }
+
+    setUploadResult(result.file);
+    setUrlInput('');
     setIsUploading(false);
   };
 
@@ -90,6 +123,28 @@ export const FileUpload = () => {
               <div className="text-sm text-gray-400">PNG, JPG up to 5MB</div>
             </div>
           )}
+        </div>
+
+        {/* URL Upload Section */}
+        <div className="space-y-2">
+          <div className="text-sm font-medium text-gray-300">Or upload from URL</div>
+          <div className="flex gap-2">
+            <input
+              type="url"
+              placeholder="https://example.com/image.jpg"
+              value={urlInput}
+              onChange={(e) => setUrlInput(e.target.value)}
+              disabled={isUploading}
+              className="flex-1 rounded-md border border-gray-600 bg-gray-700 px-3 py-2 text-white placeholder-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:opacity-50"
+            />
+            <button
+              onClick={handleUrlUpload}
+              disabled={isUploading || !urlInput.trim()}
+              className="rounded-md bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-600 disabled:cursor-not-allowed"
+            >
+              Upload
+            </button>
+          </div>
         </div>
 
         {error && (

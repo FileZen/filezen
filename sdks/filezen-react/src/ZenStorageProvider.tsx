@@ -4,10 +4,11 @@ import {
   ZenStorage,
   ZenStorageBulkItem,
   ZenStorageListener,
-  ZenUploadSource,
+  ZenStorageOptions,
   ZenStorageUploadOptions,
   ZenUpload,
   ZenUploadListener,
+  ZenUploadSource,
 } from '@filezen/js';
 import React, {
   PropsWithChildren,
@@ -49,13 +50,10 @@ export interface IFileZenContext {
 
 export const FileZenContext = React.createContext<IFileZenContext>({} as any);
 
-export type FileZenProviderProps = PropsWithChildren & {
-  apiKey?: string;
-  apiUrl?: string;
-};
+export type FileZenProviderProps = PropsWithChildren & ZenStorageOptions;
 
 export const ZenStorageProvider = (props: FileZenProviderProps) => {
-  const { apiKey, apiUrl, children } = props;
+  const { apiKey, apiUrl, keepUploads = true, children } = props;
   const [projectId, setProjectId] = React.useState<string | null | undefined>(
     null,
   );
@@ -69,6 +67,7 @@ export const ZenStorageProvider = (props: FileZenProviderProps) => {
     return new ZenStorage({
       apiKey: apiKey,
       apiUrl: apiUrl,
+      keepUploads: keepUploads,
     });
   }, [apiKey, apiUrl]);
 
@@ -104,14 +103,12 @@ export const ZenStorageProvider = (props: FileZenProviderProps) => {
     (event: React.ChangeEvent<HTMLInputElement>) => {
       const files = event.target.files;
       if (files && files.length > 0) {
-        const uploads: ZenStorageBulkItem[] = Array.from(files).map(
-          (file) => {
-            return {
-              source: file,
-              options: { ...options, projectId: projectId },
-            };
-          },
-        );
+        const uploads: ZenStorageBulkItem[] = Array.from(files).map((file) => {
+          return {
+            source: file,
+            options: { ...options, projectId: projectId },
+          };
+        });
         handleUpload(...uploads);
         // Reset the input value so the same file can be selected again
         event.target.value = '';

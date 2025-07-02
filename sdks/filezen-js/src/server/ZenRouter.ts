@@ -1,7 +1,7 @@
-import { validate as isValidUUID } from 'uuid';
 import { ZenApi } from '../ZenApi';
 import { buildZenError, ZenError } from '../ZenError';
 import { ZenSigner } from './ZenSigner';
+import { isValidUUID } from '../utils';
 
 export type CreateZenRouterOptions<Request, Response> = {
   buildResponse: (data: object) => Response;

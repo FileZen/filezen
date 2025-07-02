@@ -1,3 +1,10 @@
+import { AxiosProgressEvent } from 'axios';
+import { ZenProgress } from './ZenUpload';
+
+/*
+Api
+ */
+
 export enum FileType {
   file = 'file',
   folder = 'folder',
@@ -48,9 +55,11 @@ export type ZenList = {
   total: number;
 };
 
-export type ZenStorageSource = File | Blob | Buffer | string;
+/*
+Uploader & Storage
+ */
 
-export type ZenUploadSource = File | Blob | string;
+export type ZenUploadSource = File | Blob | Buffer | string;
 
 export type ZenStorageUploadOptions = {
   name?: string;
@@ -58,10 +67,11 @@ export type ZenStorageUploadOptions = {
   folderId?: string;
   projectId?: string | null;
   mimeType?: string;
+  metadata?: ZenMetadata;
 };
 
 export type ZenStorageBulkItem = {
-  source: ZenStorageSource;
+  source: ZenUploadSource;
   options?: ZenStorageUploadOptions;
 };
 
@@ -70,8 +80,47 @@ export type ZenUploaderParams = {
   size?: number;
   mimeType?: string;
   metadata?: ZenMetadata;
-  projectId?: string | null;
   folderId?: string | null;
+  projectId?: string | null;
   abortController?: AbortController;
-  onUploadProgress?: (percent: number) => void;
+  onUploadProgress?: (progress: ZenProgress) => void;
+};
+
+/*
+Multipart
+ */
+
+export enum UploadMode {
+  CHUNKED = 'chunked', // Known file size, sequential chunks
+  STREAMING = 'streaming', // Unknown file size, any order chunks
+}
+
+export type StartMultipartUploadParams = {
+  fileName: string;
+  mimeType: string;
+  totalSize?: number;
+  chunkSize?: number;
+  metadata?: ZenMetadata;
+  uploadMode?: UploadMode;
+  parentId?: string | null;
+  projectId?: string | null;
+};
+
+export type MultipartUploadChunkParams = {
+  sessionId: string;
+  chunk: Blob;
+  chunkIndex?: number;
+  abortController?: AbortController;
+  onUploadProgress?: (progress: AxiosProgressEvent) => void;
+};
+
+export type MultipartChunkUploadResult = {
+  isComplete: boolean;
+  file?: ZenFile;
+  nextChunkIndex?: number;
+};
+
+export type FinishMultipartUploadParams = {
+  sessionId: string;
+  abortController?: AbortController;
 };

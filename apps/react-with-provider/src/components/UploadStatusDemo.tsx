@@ -1,6 +1,6 @@
 'use client';
 
-import type { ZenUpload } from '@filezen/js';
+import type { ZenUpload, ZenProgress } from '@filezen/js';
 import { useFileZen } from '@filezen/react';
 import { useEffect, useState } from 'react';
 
@@ -10,14 +10,16 @@ export function UploadStatusDemo() {
     {},
   );
 
+  console.log('uploads in statuses: ', uploads);
+
   useEffect(() => {
     // Set up progress listeners for all uploads
     const listeners = uploads.map((upload) => {
       const listener = {
-        onProgress: (upload: ZenUpload, progress: number) => {
+        onProgress: (upload: ZenUpload, progress: ZenProgress) => {
           setUploadProgress((prev) => ({
             ...prev,
-            [upload.localId]: progress,
+            [upload.localId]: progress.percent ?? 0,
           }));
         },
         onComplete: (upload: ZenUpload) => {

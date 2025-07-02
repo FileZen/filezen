@@ -1,109 +1,85 @@
-import { v4 } from 'uuid';
-import { ZenFile, ZenMetadata } from './types';
+import {
+  ZenFile,
+  ZenMetadata,
+  ZenStorageUploadOptions,
+  ZenUploadSource,
+} from './types';
+import { extractFileInfoFromUrl } from './utils';
 import { ZenError } from './ZenError';
 import { ZenUploader } from './ZenUploader';
 
+export type ZenProgress = {
+  bytes?: number;
+  total?: number;
+  percent?: number;
+};
+
 export interface ZenUploadListener {
   onStart?: (upload: ZenUpload) => void;
-  onProgress?: (upload: ZenUpload, progress: number) => void;
+  onProgress?: (upload: ZenUpload, progress: ZenProgress) => void;
   onComplete?: (upload: ZenUpload) => void;
   onError?: (upload: ZenUpload, error: ZenError) => void;
   onCancel?: (upload: ZenUpload) => void;
 }
 
+let lastUsedId = 0;
+const genUploadId = () => {
+  return `${++lastUsedId}-${Date.now()}`;
+};
+
 export class ZenUpload {
-  readonly localId: string = v4();
+  readonly localId: string = genUploadId();
 
   private listeners: ZenUploadListener[] = [];
   private abortController?: AbortController;
 
-  private _progressPercent: number = 0;
+  private _progress: ZenProgress = { bytes: 0, percent: 0 };
   private _error: ZenError | null | undefined;
   private _isCompleted: boolean = false;
   private _file: ZenFile | null = null;
 
-  static fromFile(
+  static fromSource(
     uploader: ZenUploader,
-    file: File,
-    options?: {
-      folder?: string | null;
-      folderId?: string | null;
-      projectId?: string | null;
-    },
+    source: ZenUploadSource,
+    options?: ZenStorageUploadOptions,
   ): ZenUpload {
-    const fileName = options?.folder
-      ? `${options.folder}/${file.name}`
-      : file.name;
+    let targetName: string | undefined = options?.name;
+    let targetMimeType = options?.mimeType ?? 'application/octet-stream';
+    if (source instanceof File && !targetName) {
+      targetName = source.name;
+    }
+    if (!targetName && typeof source === 'string') {
+      let fileInfo = extractFileInfoFromUrl(source);
+      if (fileInfo) {
+        targetName = fileInfo.filename;
+        if (fileInfo.mimeType) {
+          targetMimeType = fileInfo.mimeType;
+        }
+      }
+      //TODO: add extract from base64
+    }
+    if (!targetName) {
+      throw new Error('`name` is required for upload sources other than File');
+    }
+    const resultFileName = options?.folder
+      ? `${options.folder}/${targetName}`
+      : targetName;
     return new ZenUpload(
       uploader,
-      fileName,
-      file.type,
-      file,
-      undefined,
+      resultFileName,
+      targetMimeType,
+      source,
+      options?.metadata,
       options?.projectId,
       options?.folderId,
     );
   }
 
-  static fromBlob(
-    uploader: ZenUploader,
-    source: Blob,
-    options: {
-      name: string;
-      mimeType?: string;
-      folder?: string | null;
-      folderId?: string | null;
-      projectId?: string | null;
-    },
-  ): ZenUpload {
-    const fileName = options.folder
-      ? `${options.folder}/${options.name}`
-      : options.name;
-    return new ZenUpload(
-      uploader,
-      fileName,
-      options.mimeType ?? 'application/octet-stream',
-      new Blob([source], {
-        type: options.mimeType ?? 'application/octet-stream',
-      }),
-      undefined,
-      options.projectId,
-      options.folderId,
-    );
-  }
-
-  static fromBuffer(
-    uploader: ZenUploader,
-    source: Buffer,
-    options: {
-      name: string;
-      mimeType?: string;
-      folder?: string | null;
-      folderId?: string | null;
-      projectId?: string | null;
-    },
-  ): ZenUpload {
-    const fileName = options.folder
-      ? `${options.folder}/${options.name}`
-      : options.name;
-    return new ZenUpload(
-      uploader,
-      fileName,
-      options.mimeType ?? 'application/octet-stream',
-      new Blob([source], {
-        type: options.mimeType ?? 'application/octet-stream',
-      }),
-      undefined,
-      options.projectId,
-      options.folderId,
-    );
-  }
-
-  constructor(
+  private constructor(
     readonly uploader: ZenUploader,
     readonly name: string,
     readonly type: string,
-    readonly source: File | Blob | string,
+    readonly source: ZenUploadSource,
     readonly metadata?: ZenMetadata,
     readonly projectId?: string | null,
     readonly folderId?: string | null,
@@ -125,15 +101,15 @@ export class ZenUpload {
     });
   }
 
-  set progressPercent(progress: number) {
-    this._progressPercent = progress;
+  set progress(progress: ZenProgress) {
+    this._progress = progress;
     this.listeners.forEach((listener: ZenUploadListener) => {
       listener.onProgress?.(this, progress);
     });
   }
 
-  get progressPercent() {
-    return this._progressPercent;
+  get progress() {
+    return this._progress;
   }
 
   set error(error: ZenError | null | undefined) {
@@ -181,7 +157,7 @@ export class ZenUpload {
       folderId: this.folderId,
       abortController: controller,
       onUploadProgress: (percent) => {
-        this.progressPercent = percent;
+        this.progress = percent;
         this.listeners.forEach((listener) => {
           listener.onProgress?.(this, percent);
         });
