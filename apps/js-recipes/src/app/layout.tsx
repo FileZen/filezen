@@ -20,7 +20,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <ZenClientProvider url={'http://localhost:3000'}>
+        <ZenClientProvider>
           <Navigation />
           {children}
         </ZenClientProvider>
