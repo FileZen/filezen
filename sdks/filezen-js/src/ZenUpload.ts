@@ -64,7 +64,7 @@ export class ZenUpload {
     const resultFileName = options?.folder
       ? `${options.folder}/${targetName}`
       : targetName;
-    return new ZenUpload(
+    const result = new ZenUpload(
       uploader,
       resultFileName,
       targetMimeType,
@@ -73,6 +73,10 @@ export class ZenUpload {
       options?.projectId,
       options?.folderId,
     );
+    if (options?.listener) {
+      result.addListener(options.listener);
+    }
+    return result;
   }
 
   private constructor(

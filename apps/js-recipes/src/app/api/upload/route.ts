@@ -2,7 +2,9 @@ import { ZenApi } from '@filezen/js';
 import { createZenNextRouter } from '@filezen/next';
 import { NextRequest } from 'next/server';
 
-const zenApi = new ZenApi();
+const zenApi = new ZenApi({
+  apiUrl: 'http://localhost:3000',
+});
 
 const requestMiddleware = async (request: NextRequest) => {
   /**

@@ -1,14 +1,15 @@
+import { Navigation } from '@/components/Navigation';
 import { ZenClientProvider } from '@filezen/react';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
-import { Navigation } from '@/components/Navigation';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: 'FileZen JavaScript Recipes',
-  description: 'Collection of FileZen JavaScript recipes and implementation patterns',
+  description:
+    'Collection of FileZen JavaScript recipes and implementation patterns',
 };
 
 export default function RootLayout({
@@ -19,7 +20,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <ZenClientProvider>
+        <ZenClientProvider url={'http://localhost:3000'}>
           <Navigation />
           {children}
         </ZenClientProvider>

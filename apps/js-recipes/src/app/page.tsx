@@ -39,6 +39,13 @@ const recipes = [
     icon: '🎨',
     features: ['AI-Generated Images', 'Custom Prompts', 'Instant Generation', 'Manual Upload'],
   },
+  {
+    title: 'AI Audio Generation',
+    description: 'Generate AI-powered audio from text and upload to FileZen with voice selection.',
+    href: '/ai-audio-generation',
+    icon: '🎵',
+    features: ['Text-to-Speech AI', 'Multiple Voice Options', 'Real-time Playback', 'Audio Upload'],
+  },
 ];
 
 export default function Home() {

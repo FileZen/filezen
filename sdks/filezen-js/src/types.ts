@@ -1,5 +1,5 @@
 import { AxiosProgressEvent } from 'axios';
-import { ZenProgress } from './ZenUpload';
+import { ZenProgress, ZenUploadListener } from './ZenUpload';
 
 /*
 Api
@@ -68,6 +68,7 @@ export type ZenStorageUploadOptions = {
   projectId?: string | null;
   mimeType?: string;
   metadata?: ZenMetadata;
+  listener?: ZenUploadListener;
 };
 
 export type ZenStorageBulkItem = {

@@ -10,6 +10,7 @@ const navItems = [
   { href: '/bulk-upload', label: 'Bulk Upload' },
   { href: '/progress-tracking', label: 'Progress Tracking' },
   { href: '/ai-image-generation', label: 'AI Image Generation' },
+  { href: '/ai-audio-generation', label: 'AI Audio Generation' },
 ];
 
 export function Navigation() {

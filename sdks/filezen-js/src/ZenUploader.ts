@@ -369,6 +369,7 @@ export class ZenUploader {
     }
 
     const targetUrl = this.options.url ?? 'https://api.filezen.dev';
+    console.log('targetUrl', targetUrl);
 
     const response = await axios.post(
       `${targetUrl}/files/chunk-upload/part`,
