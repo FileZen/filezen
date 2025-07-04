@@ -26,7 +26,7 @@ This example uses H3 for several advantages:
 
 1. **Install dependencies:**
    ```bash
-   npm install
+   yarn install
    ```
 
 2. **Set up environment variables:**

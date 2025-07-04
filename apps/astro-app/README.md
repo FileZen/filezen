@@ -74,9 +74,7 @@ The `/api/upload` endpoint uses the `@filezen/astro` SDK:
 import { ZenApi } from '@filezen/js';
 import { createZenAstroRouter } from '@filezen/astro';
 
-const zenApi = new ZenApi({
-  apiKey: import.meta.env.FILEZEN_API_KEY,
-});
+const zenApi = new ZenApi();
 
 export const { POST, DELETE } = createZenAstroRouter(zenApi, {
   onRequest: requestMiddleware,

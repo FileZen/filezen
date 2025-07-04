@@ -1,11 +1,16 @@
 'use client';
 
-import { ZenError, ZenFile } from '@filezen/js';
+import {
+  MULTIPART_CHUNK_SIZE,
+  UploadMode,
+  ZenError,
+  ZenFile,
+} from '@filezen/js';
 import { useZenClient } from '@filezen/react';
 import React, { useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 
-export const FileUpload = () => {
+export const CustomMultipartUpload = () => {
   const zenClient = useZenClient();
   const [isUploading, setIsUploading] = React.useState(false);
   const [error, setError] = React.useState<ZenError | null>(null);
@@ -15,26 +20,47 @@ export const FileUpload = () => {
     setError(null);
     setIsUploading(true);
 
-    const result = await zenClient.upload(file);
-
-    if (result.error) {
-      setError(result.error);
-      setIsUploading(false);
-      return;
-    }
-
-    if (uploadResult) {
-      zenClient.delete(uploadResult.id).then((result) => {
-        if (result.error) {
-          console.error('Previous file delete failed: ', result.error);
-        } else {
-          console.log('Previous file deleted!');
-        }
+    try {
+      const { id: sessionId } = await zenClient.multipart.start({
+        fileName: file.name,
+        mimeType: file.type,
+        totalSize: file.size,
+        uploadMode: UploadMode.STREAMING,
       });
-    }
 
-    setUploadResult(result.file);
-    setIsUploading(false);
+      let uploadedSize = 0;
+      while (uploadedSize < file.size) {
+        const chunk = file.slice(
+          uploadedSize,
+          Math.min(file.size, uploadedSize + MULTIPART_CHUNK_SIZE),
+        );
+        await zenClient.multipart.uploadPart({
+          sessionId: sessionId,
+          chunk: chunk,
+        });
+        uploadedSize = Math.min(file.size, uploadedSize + MULTIPART_CHUNK_SIZE);
+      }
+
+      const result = await zenClient.multipart.finish({
+        sessionId: sessionId,
+      });
+
+      if (uploadResult) {
+        zenClient.delete(uploadResult.id).then((result) => {
+          if (result.error) {
+            console.error('Previous file delete failed: ', result.error);
+          } else {
+            console.log('Previous file deleted!');
+          }
+        });
+      }
+
+      setUploadResult(result);
+      setIsUploading(false);
+    } catch (error: any) {
+      setError(error?.message || 'Upload failed');
+      setIsUploading(false);
+    }
   };
 
   const onDrop = useCallback(
@@ -49,6 +75,7 @@ export const FileUpload = () => {
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
+      'video/mp4': ['.mp4'],
       'image/png': ['.png'],
       'image/jpeg': ['.jpg', '.jpeg'],
     },
@@ -69,11 +96,15 @@ export const FileUpload = () => {
 
           {uploadResult ? (
             <div className="group relative">
-              <img
-                src={uploadResult.url}
-                alt="Profile"
-                className="mx-auto h-32 w-32 rounded-full object-cover ring-2 ring-gray-700"
-              />
+              {uploadResult.mimeType === 'video/mp4' ? (
+                <video src={uploadResult.url} controls />
+              ) : (
+                <img
+                  src={uploadResult.url}
+                  alt="Profile"
+                  className="mx-auto h-32 w-32 rounded-full object-cover ring-2 ring-gray-700"
+                />
+              )}
               <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/70 opacity-0 transition-opacity group-hover:opacity-100">
                 <span className="text-sm text-white">Click to change</span>
               </div>

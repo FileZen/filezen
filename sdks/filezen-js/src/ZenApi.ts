@@ -21,11 +21,17 @@ export class ZenApi {
   private readonly axiosInstance: AxiosInstance;
 
   constructor(readonly options: ZenApiOptions = {}) {
-    const targetApiKey =
+    let targetApiKey =
       options.apiKey ??
       process.env.FILEZEN_API_KEY ??
       process.env.REACT_APP_FILEZEN_API_KEY ??
       process.env.NEXT_PUBLIC_FILEZEN_API_KEY;
+    if (!targetApiKey) {
+      try {
+        // @ts-ignore
+        targetApiKey = import.meta.env.FILEZEN_API_KEY;
+      } catch (ignore) {}
+    }
     if (!targetApiKey) {
       throw new Error(
         "No API key provided, it's should be provided in options or via environment variable FILEZEN_API_KEY or NEXT_PUBLIC_FILEZEN_API_KEY or REACT_APP_FILEZEN_API_KEY",

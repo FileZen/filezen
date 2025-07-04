@@ -7,7 +7,7 @@ This is an example project demonstrating how to use FileZen with Next.js for fil
 1. Clone the repository
 2. Install dependencies:
    ```bash
-   npm install
+   yarn install
    ```
 3. Create `.env` file in the root directory and add your FileZen API key:
    ```

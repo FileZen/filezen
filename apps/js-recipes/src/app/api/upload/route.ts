@@ -1,13 +1,13 @@
-import { createZenAstroRouter } from '@filezen/astro';
 import { ZenApi } from '@filezen/js';
-import type { APIContext } from 'astro';
+import { createZenNextRouter } from '@filezen/next';
+import { NextRequest } from 'next/server';
 
 const zenApi = new ZenApi();
 
-const requestMiddleware = async (context: APIContext) => {
+const requestMiddleware = async (request: NextRequest) => {
   /**
    * Here you can verify request, e.g - check user authentication:
-   * const user = await getUserFromRequest(context);
+   * const user = await getUserFromRequest(request);
    * if (!user) {
    *    throw new ZenError(401, 'Unauthorized');
    * }
@@ -15,6 +15,6 @@ const requestMiddleware = async (context: APIContext) => {
    */
 };
 
-export const { POST, DELETE } = createZenAstroRouter(zenApi, {
+export const { POST, DELETE } = createZenNextRouter(zenApi, {
   onRequest: requestMiddleware,
 });

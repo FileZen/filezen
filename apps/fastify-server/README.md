@@ -25,7 +25,7 @@ This example uses Fastify instead of Express for better performance and TypeScri
 
 1. **Install dependencies:**
    ```bash
-   npm install
+   yarn install
    ```
 
 2. **Set up environment variables:**

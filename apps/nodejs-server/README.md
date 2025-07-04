@@ -15,7 +15,7 @@ This is a complete Node.js server example demonstrating how to use the FileZen J
 
 1. **Install dependencies:**
    ```bash
-   npm install
+   yarn install
    ```
 
 2. **Set up environment variables:**
