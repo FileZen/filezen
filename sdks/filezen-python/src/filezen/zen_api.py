@@ -153,6 +153,7 @@ class ZenApi:
                 api_params["chunkSize"] = str(params.chunk_size)
             if params.metadata is not None:
                 import json
+
                 api_params["metadata"] = json.dumps(params.metadata)
             if params.upload_mode is not None:
                 api_params["uploadMode"] = params.upload_mode.value
