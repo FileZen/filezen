@@ -1,40 +1,57 @@
 """API communication for the FileZen Python SDK."""
 
+import base64
 import os
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Union
 
 import httpx
 
 from .constants import DEFAULT_API_URL
-from .zen_error import ZenAuthenticationError, ZenNetworkError
+from .types import (
+    ZenUploaderParams, 
+    ZenUploadResponse, 
+    ZenMultipartInitResponse, 
+    ZenMultipartChunkResponse,
+    ZenFile,
+    ZenList,
+    StartMultipartUploadParams,
+    ZenMetadata,
+    to_dataclass
+)
+from .zen_error import build_zen_error, ZenError
 
 
 class ZenApi:
     """Handles API communication with FileZen."""
 
-    def __init__(self, options: Optional[Dict[str, Any]] = None) -> None:
+    def __init__(
+            self,
+            *,
+            api_key: Optional[str] = None,
+            api_url: Optional[str] = None
+    ) -> None:
         """Initialize ZenApi.
 
         Args:
-            options: Configuration options
+            api_key: FileZen API key. If not provided, will use FILEZEN_API_KEY environment variable.
+            api_url: Custom API URL. Defaults to https://api.filezen.dev
         """
-        self.options = options or {}
-
-        # Get API key from options or environment
+        # Get API key from parameter or environment
         self.api_key = (
-            self.options.get("api_key")
-            or os.getenv("FILEZEN_API_KEY")
-            or os.getenv("REACT_APP_FILEZEN_API_KEY")
-            or os.getenv("NEXT_PUBLIC_FILEZEN_API_KEY")
+                api_key
+                or os.getenv("FILEZEN_API_KEY")
+                or os.getenv("REACT_APP_FILEZEN_API_KEY")
+                or os.getenv("NEXT_PUBLIC_FILEZEN_API_KEY")
         )
 
         if not self.api_key:
-            raise ZenAuthenticationError(
-                "No API key provided. Set FILEZEN_API_KEY environment variable or pass api_key in options."
+            raise ZenError(
+                "No API key provided. Set FILEZEN_API_KEY environment variable or pass api_key parameter.",
+                code="AUTH_ERROR"
             )
 
         # Get API URL with fallback
-        self.api_url = self.options.get("api_url") or DEFAULT_API_URL
+        self.api_url = api_url or DEFAULT_API_URL
 
         # Ensure we have a valid API URL
         if not self.api_url:
@@ -54,105 +71,109 @@ class ZenApi:
             ),
         )
 
+    def set_authorization(self, authorization: Optional[str] = None) -> None:
+        """Set authorization header.
+
+        Args:
+            authorization: Authorization header value
+        """
+        if authorization:
+            self.client.headers["Authorization"] = authorization
+        else:
+            self.client.headers.pop("Authorization", None)
+
     async def upload_file(
-        self, source: bytes, params: Dict[str, Any]
-    ) -> Dict[str, Any]:
+            self, source: bytes, params: Union[Dict[str, Any], ZenUploaderParams]
+    ) -> ZenUploadResponse:
         """Upload a file to FileZen.
 
         Args:
             source: File content as bytes
-            params: Upload parameters
+            params: Upload parameters as dict or ZenUploaderParams
 
         Returns:
             Upload result
         """
+        # Convert dict to dataclass if needed
+        params = to_dataclass(ZenUploaderParams, params)
+        
         try:
             # Prepare multipart form data
             files = {
                 "file": (
-                    params["name"],
+                    params.name,
                     source,
-                    params.get("mimeType", "application/octet-stream"),
+                    params.mime_type or "application/octet-stream",
                 )
             }
 
             # Additional form data
             data = {}
-            if "mimeType" in params:
-                data["mimeType"] = params["mimeType"]
+            if params.mime_type:
+                data["mimeType"] = params.mime_type
+            if params.metadata:
+                # Serialize metadata to JSON string for form data
+                import json
+                data["metadata"] = json.dumps(params.metadata)
+            if params.project_id:
+                data["projectId"] = params.project_id
+            if params.folder_id:
+                data["folderId"] = params.folder_id
 
             response = await self.client.post("/files/upload", files=files, data=data)
             response.raise_for_status()
 
-            return {"data": response.json()}
+            return ZenUploadResponse.from_dict({"data": response.json()})
 
-        except httpx.HTTPStatusError as e:
-            if e.response.status_code == 401:
-                raise ZenAuthenticationError("Invalid API key") from e
-            elif e.response.status_code == 413:
-                raise ZenNetworkError("File too large") from e
-            else:
-                raise ZenNetworkError(f"Upload failed: {e.response.text}") from e
-        except httpx.RequestError as e:
-            raise ZenNetworkError(f"Network error: {str(e)}") from e
-
-    async def delete_file_by_url(self, url: str) -> Dict[str, Any]:
-        """Delete a file by URL.
-
-        Args:
-            url: File URL to delete
-
-        Returns:
-            Delete result
-        """
-        try:
-            response = await self.client.delete(
-                "/files/delete-by-url", params={"url": url}
-            )
-            response.raise_for_status()
-
-            return {"data": True}
-
-        except httpx.HTTPStatusError as e:
-            if e.response.status_code == 401:
-                raise ZenAuthenticationError("Invalid API key") from e
-            else:
-                raise ZenNetworkError(f"Delete failed: {e.response.text}") from e
-        except httpx.RequestError as e:
-            raise ZenNetworkError(f"Network error: {str(e)}") from e
+        except (httpx.HTTPStatusError, httpx.RequestError) as e:
+            raise build_zen_error(e)
 
     async def initialize_multipart_upload(
-        self, params: Dict[str, Any]
-    ) -> Dict[str, Any]:
+            self, params: Union[Dict[str, Any], StartMultipartUploadParams]
+    ) -> ZenMultipartInitResponse:
         """Initialize a multipart upload.
 
         Args:
-            params: Multipart upload parameters
+            params: Multipart upload parameters as dict or StartMultipartUploadParams
 
         Returns:
             Multipart upload initialization result
         """
+        # Convert dict to dataclass if needed
+        params = to_dataclass(StartMultipartUploadParams, params)
+        
         try:
+            # Convert dataclass to dict for API
+            api_params = {
+                "fileName": params.file_name,
+                "mimeType": params.mime_type,
+            }
+            if params.total_size is not None:
+                api_params["totalSize"] = params.total_size
+            if params.chunk_size is not None:
+                api_params["chunkSize"] = params.chunk_size
+            if params.metadata is not None:
+                api_params["metadata"] = params.metadata
+            if params.upload_mode is not None:
+                api_params["uploadMode"] = params.upload_mode.value
+            if params.parent_id is not None:
+                api_params["parentId"] = params.parent_id
+            if params.project_id is not None:
+                api_params["projectId"] = params.project_id
+
             response = await self.client.post(
-                "/files/chunk-upload/initialize", json=params
+                "/files/chunk-upload/initialize", json=api_params
             )
             response.raise_for_status()
 
-            return {"data": response.json()}
+            return ZenMultipartInitResponse.from_dict({"data": response.json()})
 
-        except httpx.HTTPStatusError as e:
-            if e.response.status_code == 401:
-                raise ZenAuthenticationError("Invalid API key") from e
-            else:
-                raise ZenNetworkError(
-                    f"Multipart upload initialization failed: {e.response.text}"
-                ) from e
-        except httpx.RequestError as e:
-            raise ZenNetworkError(f"Network error: {str(e)}") from e
+        except (httpx.HTTPStatusError, httpx.RequestError) as e:
+            raise build_zen_error(e)
 
     async def upload_chunk(
-        self, session_id: str, chunk: bytes, chunk_index: int, chunk_size: int
-    ) -> Dict[str, Any]:
+            self, session_id: str, chunk: bytes, chunk_index: int, chunk_size: int
+    ) -> ZenMultipartChunkResponse:
         """Upload a chunk in multipart upload.
 
         Args:
@@ -179,15 +200,136 @@ class ZenApi:
             )
             response.raise_for_status()
 
-            return {"data": response.json()}
+            return ZenMultipartChunkResponse.from_dict({"data": response.json()})
 
-        except httpx.HTTPStatusError as e:
-            if e.response.status_code == 401:
-                raise ZenAuthenticationError("Invalid API key") from e
-            else:
-                raise ZenNetworkError(f"Chunk upload failed: {e.response.text}") from e
-        except httpx.RequestError as e:
-            raise ZenNetworkError(f"Network error: {str(e)}") from e
+        except (httpx.HTTPStatusError, httpx.RequestError) as e:
+            raise build_zen_error(e)
+
+    async def finish_multipart_upload(self, session_id: str) -> ZenFile:
+        """Finish a multipart upload session.
+
+        Args:
+            session_id: Multipart upload session ID
+
+        Returns:
+            Finish result with file information
+        """
+        try:
+            response = await self.client.post(
+                f"/files/chunk-upload/finish/{session_id}"
+            )
+            response.raise_for_status()
+
+            return ZenFile.from_dict(response.json())
+
+        except (httpx.HTTPStatusError, httpx.RequestError) as e:
+            raise build_zen_error(e)
+
+    async def delete_file_by_url(self, url: str) -> bool:
+        """Delete a file by URL.
+
+        Args:
+            url: File URL to delete
+
+        Returns:
+            Delete result
+        """
+        try:
+            response = await self.client.delete(
+                "/files/delete-by-url", params={"url": url}
+            )
+            response.raise_for_status()
+
+            return True
+
+        except (httpx.HTTPStatusError, httpx.RequestError) as e:
+            raise build_zen_error(e)
+
+    async def list_files(
+            self, 
+            limit: Optional[int] = None, 
+            offset: Optional[int] = None
+    ) -> ZenList:
+        """List files.
+
+        Args:
+            limit: Number of files to return (default: 20)
+            offset: Number of files to skip (default: 0)
+
+        Returns:
+            List of files
+        """
+        try:
+            params = {
+                "limit": limit or 20,
+                "offset": offset or 0,
+            }
+            response = await self.client.get("/files", params=params)
+            response.raise_for_status()
+
+            return ZenList.from_dict(response.json())
+
+        except (httpx.HTTPStatusError, httpx.RequestError) as e:
+            raise build_zen_error(e)
+
+    async def file_info(self, file_id: str) -> ZenFile:
+        """Get file information.
+
+        Args:
+            file_id: File ID
+
+        Returns:
+            File information
+        """
+        try:
+            response = await self.client.get(f"/files/{file_id}")
+            response.raise_for_status()
+
+            return ZenFile.from_dict(response.json())
+
+        except (httpx.HTTPStatusError, httpx.RequestError) as e:
+            raise build_zen_error(e)
+
+    async def update_file(
+            self, 
+            file_id: str, 
+            params: Dict[str, Union[str, int, float, bool, None, ZenMetadata]]
+    ) -> ZenFile:
+        """Update file information.
+
+        Args:
+            file_id: File ID
+            params: Update parameters
+
+        Returns:
+            Updated file information
+        """
+        try:
+            response = await self.client.patch(f"/files/{file_id}", json=params)
+            response.raise_for_status()
+
+            return ZenFile.from_dict(response.json())
+
+        except (httpx.HTTPStatusError, httpx.RequestError) as e:
+            raise build_zen_error(e)
+
+    async def delete_file(self, file_id: str) -> bool:
+        """Delete a file by ID.
+
+        Args:
+            file_id: File ID to delete
+
+        Returns:
+            True if successful
+        """
+        try:
+            response = await self.client.delete(f"/files/{file_id}")
+            response.raise_for_status()
+
+            return True
+
+        except (httpx.HTTPStatusError, httpx.RequestError) as e:
+            raise build_zen_error(e)
 
     async def close(self) -> None:
         """Close the HTTP client."""
@@ -198,10 +340,10 @@ class ZenApi:
         return self
 
     async def __aexit__(
-        self,
-        exc_type: Optional[type],
-        exc_val: Optional[BaseException],
-        exc_tb: Optional[Any],
+            self,
+            exc_type: Optional[type],
+            exc_val: Optional[BaseException],
+            exc_tb: Optional[Any],
     ) -> None:
         """Async context manager exit."""
         await self.close()

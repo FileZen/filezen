@@ -7,7 +7,7 @@
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            max-width: 800px;
+            max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
             background-color: #f5f5f5;
@@ -23,15 +23,22 @@
             text-align: center;
             margin-bottom: 30px;
         }
+        .sections-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 20px;
+        }
         .section {
             margin-bottom: 30px;
             padding: 20px;
             border: 1px solid #e0e0e0;
             border-radius: 8px;
+            background: #fafafa;
         }
         .section h2 {
             margin-top: 0;
             color: #555;
+            font-size: 1.2em;
         }
         .form-group {
             margin-bottom: 15px;
@@ -40,13 +47,19 @@
             display: block;
             margin-bottom: 5px;
             font-weight: 500;
+            font-size: 14px;
         }
-        input[type="file"], input[type="text"], select {
+        input[type="file"], input[type="text"], input[type="url"], input[type="number"], textarea, select {
             width: 100%;
             padding: 8px;
             border: 1px solid #ddd;
             border-radius: 4px;
             box-sizing: border-box;
+            font-size: 14px;
+        }
+        textarea {
+            resize: vertical;
+            min-height: 100px;
         }
         button {
             background-color: #007bff;
@@ -56,6 +69,7 @@
             border-radius: 4px;
             cursor: pointer;
             font-size: 14px;
+            width: 100%;
         }
         button:hover {
             background-color: #0056b3;
@@ -70,7 +84,9 @@
             border-radius: 4px;
             white-space: pre-wrap;
             font-family: monospace;
-            font-size: 12px;
+            font-size: 11px;
+            max-height: 200px;
+            overflow-y: auto;
         }
         .success {
             background-color: #d4edda;
@@ -106,103 +122,298 @@
             align-items: center;
             justify-content: center;
         }
+        .nav-links {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .nav-links a {
+            display: inline-block;
+            margin: 0 10px;
+            padding: 8px 16px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .nav-links a:hover {
+            background-color: #0056b3;
+        }
+        .demo-button {
+            background-color: #28a745;
+            margin-top: 10px;
+        }
+        .demo-button:hover {
+            background-color: #218838;
+        }
+        .small-text {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>🚀 FileZen Python FastAPI Server Test</h1>
         
-        <div class="section">
-            <h2>📤 Single File Upload</h2>
-            <form id="singleUploadForm">
-                <div class="form-group">
-                    <label for="singleFile">Select File:</label>
-                    <input type="file" id="singleFile" name="file" required>
-                </div>
-                <button type="submit">
-                    <div class="button-content">
-                        <span class="loader" style="display: none;"></span>
-                        <span>Upload File</span>
-                    </div>
-                </button>
-            </form>
-            <div id="singleResult" class="result" style="display: none;"></div>
+        <div class="nav-links">
+            <a href="/docs" target="_blank">📚 API Documentation</a>
+            <a href="https://github.com/your-org/filezen" target="_blank">💻 GitHub</a>
+            <a href="#" onclick="location.reload()">🔄 Refresh</a>
         </div>
 
-        <div class="section">
-            <h2>📁 Bulk File Upload</h2>
-            <form id="bulkUploadForm">
-                <div class="form-group">
-                    <label for="bulkFiles">Select Files:</label>
-                    <input type="file" id="bulkFiles" name="files" multiple required>
-                </div>
-                <button type="submit">
-                    <div class="button-content">
-                        <span class="loader" style="display: none;"></span>
-                        <span>Upload Files</span>
+        <div class="sections-grid">
+            <!-- Basic Upload -->
+            <div class="section">
+                <h2>📤 Basic File Upload</h2>
+                <form id="basicUploadForm">
+                    <div class="form-group">
+                        <label for="basicFile">Select File:</label>
+                        <input type="file" id="basicFile" name="file" required>
                     </div>
-                </button>
-            </form>
-            <div id="bulkResult" class="result" style="display: none;"></div>
-        </div>
+                    <button type="submit">
+                        <div class="button-content">
+                            <span class="loader" style="display: none;"></span>
+                            <span>Upload File</span>
+                        </div>
+                    </button>
+                </form>
+                <div id="basicResult" class="result" style="display: none;"></div>
+            </div>
 
-        <div class="section">
-            <h2>🌐 Upload from URL</h2>
-            <form id="urlUploadForm">
-                <div class="form-group">
-                    <label for="urlInput">File URL:</label>
-                    <input type="url" id="urlInput" name="url" required placeholder="https://example.com/file.jpg">
-                </div>
-                <div class="form-group">
-                    <label for="urlName">Custom Name (optional):</label>
-                    <input type="text" id="urlName" name="name" placeholder="downloaded-file.jpg">
-                </div>
-                <button type="submit">
-                    <div class="button-content">
-                        <span class="loader" style="display: none;"></span>
-                        <span>Upload from URL</span>
+            <!-- Upload with Metadata -->
+            <div class="section">
+                <h2>📋 Upload with Metadata</h2>
+                <form id="metadataUploadForm">
+                    <div class="form-group">
+                        <label for="metadataFile">Select File:</label>
+                        <input type="file" id="metadataFile" name="file" required>
                     </div>
-                </button>
-            </form>
-            <div id="urlResult" class="result" style="display: none;"></div>
-        </div>
+                    <div class="form-group">
+                        <label for="metadataJson">Metadata (JSON):</label>
+                        <textarea id="metadataJson" placeholder='{"author": "John Doe", "version": "1.0", "tags": ["important"]}'></textarea>
+                    </div>
 
-        <div class="section">
-            <h2>🔐 Generate Signed URL & Upload</h2>
-            <form id="signedUrlForm">
-                <div class="form-group">
-                    <label for="signedUrlFile">Select File:</label>
-                    <input type="file" id="signedUrlFile" name="file" required>
-                </div>
-                <div class="form-group">
-                    <label for="signedUrlExpiresIn">Expires In (seconds, optional):</label>
-                    <input type="number" id="signedUrlExpiresIn" name="expiresIn" placeholder="3600" min="60" max="86400" value="3600">
-                </div>
-                <button type="submit">
-                    <div class="button-content">
-                        <span class="loader" style="display: none;"></span>
-                        <span>Generate Signed URL & Upload</span>
-                    </div>
-                </button>
-            </form>
-            <div id="signedUrlResult" class="result" style="display: none;"></div>
-        </div>
+                    <button type="submit">
+                        <div class="button-content">
+                            <span class="loader" style="display: none;"></span>
+                            <span>Upload with Metadata</span>
+                        </div>
+                    </button>
+                </form>
+                <div id="metadataResult" class="result" style="display: none;"></div>
+            </div>
 
-        <div class="section">
-            <h2>🗑️ Delete File</h2>
-            <form id="deleteForm">
-                <div class="form-group">
-                    <label for="deleteUrl">File URL to Delete:</label>
-                    <input type="url" id="deleteUrl" name="url" required placeholder="https://filezen.com/file-url">
-                </div>
-                <button type="submit">
+            <!-- Bulk Upload -->
+            <div class="section">
+                <h2>📁 Bulk File Upload</h2>
+                <form id="bulkUploadForm">
+                    <div class="form-group">
+                        <label for="bulkFiles">Select Files:</label>
+                        <input type="file" id="bulkFiles" name="files" multiple required>
+                        <div class="small-text">Supports up to 10 files</div>
+                    </div>
+                    <button type="submit">
+                        <div class="button-content">
+                            <span class="loader" style="display: none;"></span>
+                            <span>Upload Files</span>
+                        </div>
+                    </button>
+                </form>
+                <div id="bulkResult" class="result" style="display: none;"></div>
+            </div>
+
+            <!-- URL Upload -->
+            <div class="section">
+                <h2>🌐 Upload from URL</h2>
+                <form id="urlUploadForm">
+                    <div class="form-group">
+                        <label for="urlInput">File URL:</label>
+                        <input type="url" id="urlInput" name="url" required placeholder="https://example.com/file.pdf">
+                    </div>
+                    <div class="form-group">
+                        <label for="urlName">Custom Name (optional):</label>
+                        <input type="text" id="urlName" name="name" placeholder="downloaded-file.pdf">
+                    </div>
+                    <div class="form-group">
+                        <label for="urlMetadata">Metadata (JSON, optional):</label>
+                        <textarea id="urlMetadata" placeholder='{"source": "external", "quality": "1080p"}'></textarea>
+                    </div>
+                    <button type="submit">
+                        <div class="button-content">
+                            <span class="loader" style="display: none;"></span>
+                            <span>Upload from URL</span>
+                        </div>
+                    </button>
+                </form>
+                <div id="urlResult" class="result" style="display: none;"></div>
+            </div>
+
+            <!-- Base64 Upload -->
+            <div class="section">
+                <h2>🔐 Upload from Base64</h2>
+                <form id="base64UploadForm">
+                    <div class="form-group">
+                        <label for="base64Data">Base64 Data:</label>
+                        <textarea id="base64Data" required placeholder="data:text/plain;base64,SGVsbG8gV29ybGQ= or just SGVsbG8gV29ybGQ="></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="base64Name">Filename:</label>
+                        <input type="text" id="base64Name" required placeholder="file.txt">
+                    </div>
+                    <button type="submit">
+                        <div class="button-content">
+                            <span class="loader" style="display: none;"></span>
+                            <span>Upload from Base64</span>
+                        </div>
+                    </button>
+                </form>
+                <button class="demo-button" onclick="fillBase64Demo()">📝 Fill Demo Data</button>
+                <div id="base64Result" class="result" style="display: none;"></div>
+            </div>
+
+            <!-- Text Upload -->
+            <div class="section">
+                <h2>📝 Upload Text Content</h2>
+                <form id="textUploadForm">
+                    <div class="form-group">
+                        <label for="textContent">Text Content:</label>
+                        <textarea id="textContent" required placeholder="Hello, World!&#10;This is a text file."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="textName">Filename:</label>
+                        <input type="text" id="textName" required placeholder="greeting.txt">
+                    </div>
+                    <div class="form-group">
+                        <label for="textMimeType">MIME Type:</label>
+                        <select id="textMimeType">
+                            <option value="text/plain">text/plain</option>
+                            <option value="text/html">text/html</option>
+                            <option value="text/markdown">text/markdown</option>
+                            <option value="text/css">text/css</option>
+                            <option value="text/javascript">text/javascript</option>
+                        </select>
+                    </div>
+                    <button type="submit">
+                        <div class="button-content">
+                            <span class="loader" style="display: none;"></span>
+                            <span>Upload Text</span>
+                        </div>
+                    </button>
+                </form>
+                <div id="textResult" class="result" style="display: none;"></div>
+            </div>
+
+            <!-- Streaming Upload -->
+            <div class="section">
+                <h2>🌊 Streaming Upload Demo</h2>
+                <form id="streamingUploadForm">
+                    <div class="form-group">
+                        <label for="streamingFilename">Filename:</label>
+                        <input type="text" id="streamingFilename" value="streaming_demo.bin" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="streamingChunkSize">Chunk Size (bytes):</label>
+                        <input type="number" id="streamingChunkSize" value="1048576" min="1024" max="10485760">
+                        <div class="small-text">Default: 1MB</div>
+                    </div>
+                    <div class="form-group">
+                        <label for="streamingChunks">Number of Chunks:</label>
+                        <input type="number" id="streamingChunks" value="5" min="1" max="20">
+                    </div>
+                    <button type="submit">
+                        <div class="button-content">
+                            <span class="loader" style="display: none;"></span>
+                            <span>Start Streaming Upload</span>
+                        </div>
+                    </button>
+                </form>
+                <div id="streamingResult" class="result" style="display: none;"></div>
+            </div>
+
+            <!-- Manual Multipart Upload -->
+            <div class="section">
+                <h2>🔧 Manual Multipart Upload</h2>
+                <form id="multipartUploadForm">
+                    <div class="form-group">
+                        <label for="multipartFile">Select File:</label>
+                        <input type="file" id="multipartFile" name="file" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="multipartMode">Upload Mode:</label>
+                        <select id="multipartMode">
+                            <option value="chunked">Chunked (known size)</option>
+                            <option value="streaming">Streaming (unknown size)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="multipartChunkSize">Chunk Size (bytes):</label>
+                        <input type="number" id="multipartChunkSize" value="1048576" min="1024" max="10485760">
+                        <div class="small-text">Default: 1MB</div>
+                    </div>
+                    <button type="submit">
+                        <div class="button-content">
+                            <span class="loader" style="display: none;"></span>
+                            <span>Start Manual Multipart Upload</span>
+                        </div>
+                    </button>
+                </form>
+                <div id="multipartResult" class="result" style="display: none;"></div>
+            </div>
+
+            <!-- Mixed Upload Demo -->
+            <div class="section">
+                <h2>🎯 Mixed Upload Demo</h2>
+                <p>Demonstrates bulk upload with different source types (text, base64, URL, bytes):</p>
+                <button class="demo-button" onclick="runMixedUploadDemo()">
                     <div class="button-content">
                         <span class="loader" style="display: none;"></span>
-                        <span>Delete File</span>
+                        <span>🚀 Run Mixed Upload Demo</span>
                     </div>
                 </button>
-            </form>
-            <div id="deleteResult" class="result" style="display: none;"></div>
+                <div id="mixedResult" class="result" style="display: none;"></div>
+            </div>
+
+            <!-- Generate Signed URL -->
+            <div class="section">
+                <h2>🔐 Generate Signed URL</h2>
+                <form id="signedUrlForm">
+                    <div class="form-group">
+                        <label for="signedUrlKey">File Key:</label>
+                        <input type="text" id="signedUrlKey" required placeholder="document.pdf">
+                    </div>
+                    <div class="form-group">
+                        <label for="signedUrlExpiresIn">Expires In (seconds):</label>
+                        <input type="number" id="signedUrlExpiresIn" value="3600" min="60" max="86400">
+                    </div>
+                    <button type="submit">
+                        <div class="button-content">
+                            <span class="loader" style="display: none;"></span>
+                            <span>Generate Signed URL</span>
+                        </div>
+                    </button>
+                </form>
+                <div id="signedUrlResult" class="result" style="display: none;"></div>
+            </div>
+
+            <!-- Delete File -->
+            <div class="section">
+                <h2>🗑️ Delete File</h2>
+                <form id="deleteForm">
+                    <div class="form-group">
+                        <label for="deleteUrl">File URL to Delete:</label>
+                        <input type="url" id="deleteUrl" name="url" required placeholder="https://filezen.com/file-url">
+                    </div>
+                    <button type="submit">
+                        <div class="button-content">
+                            <span class="loader" style="display: none;"></span>
+                            <span>Delete File</span>
+                        </div>
+                    </button>
+                </form>
+                <div id="deleteResult" class="result" style="display: none;"></div>
+            </div>
         </div>
     </div>
 
@@ -222,31 +433,34 @@
 
         function showLoader(button) {
             const loader = button.querySelector('.loader');
-            const text = button.querySelector('span:last-child');
             loader.style.display = 'inline-block';
             button.disabled = true;
         }
 
         function hideLoader(button) {
             const loader = button.querySelector('.loader');
-            const text = button.querySelector('span:last-child');
             loader.style.display = 'none';
             button.disabled = false;
         }
 
-        // Single file upload
-        document.getElementById('singleUploadForm').addEventListener('submit', async (e) => {
+        function fillBase64Demo() {
+            document.getElementById('base64Data').value = 'data:text/plain;base64,SGVsbG8gV29ybGQhIFRoaXMgaXMgYSBkZW1vIGZpbGUu';
+            document.getElementById('base64Name').value = 'demo.txt';
+        }
+
+        // Basic file upload
+        document.getElementById('basicUploadForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            hideResult('singleResult');
+            hideResult('basicResult');
             
             const button = e.target.querySelector('button');
             showLoader(button);
             
             const formData = new FormData();
-            const file = document.getElementById('singleFile').files[0];
+            const file = document.getElementById('basicFile').files[0];
 
             if (!file) {
-                showResult('singleResult', 'Please select a file', true);
+                showResult('basicResult', 'Please select a file', true);
                 hideLoader(button);
                 return;
             }
@@ -259,9 +473,44 @@
                     body: formData
                 });
                 const result = await response.json();
-                showResult('singleResult', result, !response.ok);
+                showResult('basicResult', result, !response.ok);
             } catch (error) {
-                showResult('singleResult', `Error: ${error.message}`, true);
+                showResult('basicResult', `Error: ${error.message}`, true);
+            } finally {
+                hideLoader(button);
+            }
+        });
+
+        // Upload with metadata
+        document.getElementById('metadataUploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideResult('metadataResult');
+            
+            const button = e.target.querySelector('button');
+            showLoader(button);
+            
+            const formData = new FormData();
+            const file = document.getElementById('metadataFile').files[0];
+            const metadata = document.getElementById('metadataJson').value;
+
+            if (!file) {
+                showResult('metadataResult', 'Please select a file', true);
+                hideLoader(button);
+                return;
+            }
+
+            formData.append('file', file);
+            if (metadata) formData.append('metadata', metadata);
+
+            try {
+                const response = await fetch(`${API_BASE}/files/upload-with-metadata`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                showResult('metadataResult', result, !response.ok);
+            } catch (error) {
+                showResult('metadataResult', `Error: ${error.message}`, true);
             } finally {
                 hideLoader(button);
             }
@@ -312,9 +561,19 @@
             
             const url = document.getElementById('urlInput').value;
             const name = document.getElementById('urlName').value;
+            const metadata = document.getElementById('urlMetadata').value;
 
             const data = { url };
             if (name) data.name = name;
+            if (metadata) {
+                try {
+                    data.metadata = JSON.parse(metadata);
+                } catch (e) {
+                    showResult('urlResult', 'Invalid JSON in metadata field', true);
+                    hideLoader(button);
+                    return;
+                }
+            }
 
             try {
                 const response = await fetch(`${API_BASE}/files/upload-from-url`, {
@@ -331,6 +590,199 @@
             }
         });
 
+        // Base64 upload
+        document.getElementById('base64UploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideResult('base64Result');
+            
+            const button = e.target.querySelector('button');
+            showLoader(button);
+            
+            const data = document.getElementById('base64Data').value;
+            const name = document.getElementById('base64Name').value;
+
+            try {
+                const response = await fetch(`${API_BASE}/files/upload-from-base64`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ data, name })
+                });
+                const result = await response.json();
+                showResult('base64Result', result, !response.ok);
+            } catch (error) {
+                showResult('base64Result', `Error: ${error.message}`, true);
+            } finally {
+                hideLoader(button);
+            }
+        });
+
+        // Text upload
+        document.getElementById('textUploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideResult('textResult');
+            
+            const button = e.target.querySelector('button');
+            showLoader(button);
+            
+            const text = document.getElementById('textContent').value;
+            const name = document.getElementById('textName').value;
+            const mimeType = document.getElementById('textMimeType').value;
+
+            try {
+                const response = await fetch(`${API_BASE}/files/upload-text`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text, name, mime_type: mimeType })
+                });
+                const result = await response.json();
+                showResult('textResult', result, !response.ok);
+            } catch (error) {
+                showResult('textResult', `Error: ${error.message}`, true);
+            } finally {
+                hideLoader(button);
+            }
+        });
+
+        // Streaming upload
+        document.getElementById('streamingUploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideResult('streamingResult');
+            
+            const button = e.target.querySelector('button');
+            showLoader(button);
+            
+            const filename = document.getElementById('streamingFilename').value;
+            const chunkSize = document.getElementById('streamingChunkSize').value;
+            const totalChunks = document.getElementById('streamingChunks').value;
+
+            const formData = new FormData();
+            formData.append('filename', filename);
+            formData.append('chunk_size', chunkSize);
+            formData.append('total_chunks', totalChunks);
+
+            try {
+                const response = await fetch(`${API_BASE}/files/streaming-upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                showResult('streamingResult', result, !response.ok);
+            } catch (error) {
+                showResult('streamingResult', `Error: ${error.message}`, true);
+            } finally {
+                hideLoader(button);
+            }
+        });
+
+        // Manual multipart upload (simplified demo)
+        document.getElementById('multipartUploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideResult('multipartResult');
+            
+            const button = e.target.querySelector('button');
+            showLoader(button);
+            
+            const file = document.getElementById('multipartFile').files[0];
+            const mode = document.getElementById('multipartMode').value;
+            const chunkSize = parseInt(document.getElementById('multipartChunkSize').value);
+
+            if (!file) {
+                showResult('multipartResult', 'Please select a file', true);
+                hideLoader(button);
+                return;
+            }
+
+            try {
+                // Simulate multipart upload process by chunking the file and uploading via bulk upload
+                const chunks = [];
+                for (let offset = 0; offset < file.size; offset += chunkSize) {
+                    const chunk = file.slice(offset, offset + chunkSize);
+                    chunks.push(chunk);
+                }
+
+                let progress = `Manual Multipart Upload Demo - Processing ${chunks.length} chunks\n`;
+                progress += `Mode: ${mode}, Chunk Size: ${chunkSize} bytes\n\n`;
+                showResult('multipartResult', progress, false);
+
+                // Read all chunks and combine them
+                const chunkDataArray = [];
+                for (let i = 0; i < chunks.length; i++) {
+                    const chunk = chunks[i];
+                    const arrayBuffer = await chunk.arrayBuffer();
+                    chunkDataArray.push(new Uint8Array(arrayBuffer));
+                    
+                    progress += `Processed chunk ${i + 1}/${chunks.length} (${chunk.size} bytes)\n`;
+                    showResult('multipartResult', progress, false);
+                }
+
+                // Combine all chunks
+                const totalLength = chunkDataArray.reduce((sum, chunk) => sum + chunk.length, 0);
+                const combinedData = new Uint8Array(totalLength);
+                let offset = 0;
+                for (const chunk of chunkDataArray) {
+                    combinedData.set(chunk, offset);
+                    offset += chunk.length;
+                }
+
+                // Create a new file from combined data and upload using basic upload
+                const combinedBlob = new Blob([combinedData], { type: file.type });
+                const formData = new FormData();
+                formData.append('file', combinedBlob, file.name);
+                formData.append('metadata', JSON.stringify({
+                    source: 'manual_multipart_demo',
+                    mode: mode,
+                    original_chunks: chunks.length,
+                    chunk_size: chunkSize
+                }));
+
+                progress += `\nUploading combined file...\n`;
+                showResult('multipartResult', progress, false);
+
+                const response = await fetch(`${API_BASE}/files/upload-with-metadata`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    progress += `Upload failed: ${error.detail}\n`;
+                    showResult('multipartResult', progress, true);
+                    hideLoader(button);
+                    return;
+                }
+
+                const result = await response.json();
+                progress += `\n✅ Manual Multipart Upload Completed!\n`;
+                progress += `File URL: ${result.url}\n`;
+                progress += `Final Size: ${result.size} bytes\n`;
+                showResult('multipartResult', progress, false);
+
+            } catch (error) {
+                showResult('multipartResult', `Error: ${error.message}`, true);
+            } finally {
+                hideLoader(button);
+            }
+        });
+
+        // Mixed upload demo
+        async function runMixedUploadDemo() {
+            const button = document.querySelector('#mixedResult').previousElementSibling;
+            hideResult('mixedResult');
+            showLoader(button);
+
+            try {
+                const response = await fetch(`${API_BASE}/demo/mixed-upload`, {
+                    method: 'GET'
+                });
+                const result = await response.json();
+                showResult('mixedResult', result, !response.ok);
+            } catch (error) {
+                showResult('mixedResult', `Error: ${error.message}`, true);
+            } finally {
+                hideLoader(button);
+            }
+        }
+
         // Generate signed URL
         document.getElementById('signedUrlForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -339,70 +791,20 @@
             const button = e.target.querySelector('button');
             showLoader(button);
             
-            const file = document.getElementById('signedUrlFile').files[0];
+            const fileKey = document.getElementById('signedUrlKey').value;
             const expiresIn = document.getElementById('signedUrlExpiresIn').value;
 
-            if (!file) {
-                showResult('signedUrlResult', 'Please select a file', true);
-                hideLoader(button);
-                return;
-            }
-
             try {
-                // Step 1: Generate signed URL
-                const signedUrlData = {
-                    file_key: file.name,
-                    expires_in: expiresIn ? parseInt(expiresIn) : 3600
-                };
-
-                const signedUrlResponse = await fetch(`${API_BASE}/files/generate-signed-url`, {
+                const response = await fetch(`${API_BASE}/files/generate-signed-url`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(signedUrlData)
+                    body: JSON.stringify({ 
+                        file_key: fileKey, 
+                        expires_in: parseInt(expiresIn) 
+                    })
                 });
-
-                if (!signedUrlResponse.ok) {
-                    const error = await signedUrlResponse.json();
-                    showResult('signedUrlResult', `Failed to generate signed URL: ${error.detail || error.error}`, true);
-                    hideLoader(button);
-                    return;
-                }
-
-                const signedUrlResult = await signedUrlResponse.json();
-                const signedUrl = signedUrlResult.signed_url;
-
-                // Step 2: Upload file to signed URL
-                const uploadFormData = new FormData();
-                uploadFormData.append('file', file);
-
-                const uploadResponse = await fetch(signedUrl, {
-                    method: 'POST',
-                    body: uploadFormData
-                });
-
-                if (!uploadResponse.ok) {
-                    const uploadError = await uploadResponse.text();
-                    showResult('signedUrlResult', `Signed URL generated successfully!\n\nSigned URL: ${signedUrl}\n\nUpload failed: ${uploadError}`, true);
-                    hideLoader(button);
-                    return;
-                }
-
-                const uploadResult = await uploadResponse.json();
-
-                // Step 3: Show complete result
-                const completeResult = {
-                    step1: {
-                        message: 'Signed URL generated successfully',
-                        signed_url: signedUrl,
-                        expires_in: signedUrlResult.expires_in
-                    },
-                    step2: {
-                        message: 'File uploaded successfully to signed URL',
-                        upload_result: uploadResult
-                    }
-                };
-
-                showResult('signedUrlResult', completeResult, false);
+                const result = await response.json();
+                showResult('signedUrlResult', result, !response.ok);
             } catch (error) {
                 showResult('signedUrlResult', `Error: ${error.message}`, true);
             } finally {

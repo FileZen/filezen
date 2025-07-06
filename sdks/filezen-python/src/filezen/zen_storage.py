@@ -1,78 +1,244 @@
 """Main storage class for the FileZen Python SDK."""
 
-import uuid
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Union
 
-from pydantic import BaseModel, Field
-
+from .utils import is_url, is_base64
 from .zen_api import ZenApi
-from .zen_upload import UploadOptions, ZenUpload
+from .zen_error import ZenError
+from .zen_upload import ZenUpload
+from .types import (
+    ZenFile,
+    ZenUploadSource,
+    ZenMetadata,
+    ZenStorageUploadOptions,
+    ZenStorageBulkItem,
+    StartMultipartUploadParams,
+    MultipartUploadChunkParams,
+    FinishMultipartUploadParams,
+    MultipartChunkUploadResult,
+    to_dataclass
+)
 
 
-class ZenStorageListener(BaseModel):
-    """Listener for storage events."""
-
-    on_upload_start: Optional[Any] = None
-    on_upload_complete: Optional[Any] = None
-    on_upload_error: Optional[Any] = None
-    on_upload_cancel: Optional[Any] = None
-    on_uploads_change: Optional[Any] = None
-
-    class Config:
-        """Pydantic configuration."""
-
-        arbitrary_types_allowed = True
+@dataclass
+class ZenProgress:
+    """Progress information for uploads."""
+    bytes: Optional[int] = None
+    total: Optional[int] = None
+    percent: Optional[float] = None
 
 
-class ZenStorageOptions(BaseModel):
-    """Options for ZenStorage."""
+class ZenUploadListener:
+    """Listener interface for upload and storage events."""
 
-    api_key: Optional[str] = Field(None, description="FileZen API key")
-    api_url: Optional[str] = Field(None, description="FileZen API URL")
-    keep_uploads: bool = Field(False, description="Whether to keep track of uploads")
+    def on_upload_start(self, upload: ZenUpload) -> None:
+        """Called when upload starts."""
+        pass
 
-    class Config:
-        """Pydantic configuration."""
+    def on_upload_progress(self, upload: ZenUpload, progress: ZenProgress) -> None:
+        """Called on upload progress."""
+        pass
 
-        extra = "forbid"
+    def on_upload_complete(self, upload: ZenUpload) -> None:
+        """Called when upload completes."""
+        pass
+
+    def on_upload_error(self, upload: ZenUpload, error: ZenError) -> None:
+        """Called on upload error."""
+        pass
+
+    def on_upload_cancel(self, upload: ZenUpload) -> None:
+        """Called when upload is cancelled."""
+        pass
+
+    def on_uploads_change(self, uploads: List[ZenUpload]) -> None:
+        """Called when the uploads list changes."""
+        pass
+
+
+class ZenMultipartControl:
+    """Manual multipart upload control."""
+
+    def __init__(self, api: ZenApi):
+        self.api = api
+
+    async def start(
+            self,
+            params: Union[StartMultipartUploadParams, Dict[str, Any]] = None,
+            **kwargs: Any
+    ) -> Dict[str, str]:
+        """Start a multipart upload session.
+        
+        Args:
+            params: Parameters as StartMultipartUploadParams or dict
+            **kwargs: Parameters as keyword arguments (file_name, mime_type, etc.)
+        """
+        # Handle different parameter formats
+        if params is None and kwargs:
+            api_params = {
+                "fileName": kwargs["file_name"],
+                "mimeType": kwargs["mime_type"],
+            }
+            for key, api_key in [
+                ("total_size", "totalSize"),
+                ("chunk_size", "chunkSize"),
+                ("metadata", "metadata"),
+                ("upload_mode", "uploadMode"),
+                ("parent_id", "parentId"),
+                ("project_id", "projectId")
+            ]:
+                if key in kwargs:
+                    api_params[api_key] = kwargs[key]
+        elif isinstance(params, dict):
+            api_params = {
+                "fileName": params["file_name"],
+                "mimeType": params["mime_type"],
+            }
+            for key, api_key in [
+                ("total_size", "totalSize"),
+                ("chunk_size", "chunkSize"),
+                ("metadata", "metadata"),
+                ("upload_mode", "uploadMode"),
+                ("parent_id", "parentId"),
+                ("project_id", "projectId")
+            ]:
+                if key in params:
+                    api_params[api_key] = params[key]
+        else:
+            # StartMultipartUploadParams object
+            api_params = {
+                "fileName": params.file_name,
+                "mimeType": params.mime_type,
+            }
+
+            if params.total_size is not None:
+                api_params["totalSize"] = params.total_size
+            if params.chunk_size is not None:
+                api_params["chunkSize"] = params.chunk_size
+            if params.metadata is not None:
+                api_params["metadata"] = params.metadata
+            if params.upload_mode is not None:
+                api_params["uploadMode"] = params.upload_mode.value
+            if params.parent_id is not None:
+                api_params["parentId"] = params.parent_id
+            if params.project_id is not None:
+                api_params["projectId"] = params.project_id
+
+        result = await self.api.initialize_multipart_upload(api_params)
+
+        if result.error:
+            raise ZenError(result.error.get("message", "Failed to start multipart upload"))
+
+        return {"id": result.id}
+
+    async def upload_part(
+            self,
+            params: Union[MultipartUploadChunkParams, Dict[str, Any]] = None,
+            **kwargs: Any
+    ) -> MultipartChunkUploadResult:
+        """Upload a part of the multipart upload.
+        
+        Args:
+            params: Parameters as MultipartUploadChunkParams or dict
+            **kwargs: Parameters as keyword arguments (session_id, chunk, etc.)
+        """
+        # Handle different parameter formats
+        if params is None and kwargs:
+            session_id = kwargs["session_id"]
+            chunk = kwargs["chunk"]
+            chunk_index = kwargs.get("chunk_index", 0)
+        elif isinstance(params, dict):
+            session_id = params["session_id"]
+            chunk = params["chunk"]
+            chunk_index = params.get("chunk_index", 0)
+        else:
+            # MultipartUploadChunkParams object
+            session_id = params.session_id
+            chunk = params.chunk
+            chunk_index = params.chunk_index or 0
+
+        result = await self.api.upload_chunk(
+            session_id,
+            chunk,
+            chunk_index,
+            len(chunk)
+        )
+
+        if result.error:
+            raise ZenError(result.error.get("message", "Failed to upload chunk"))
+
+        return MultipartChunkUploadResult(
+            is_complete=result.is_complete,
+            file=result.file,
+            next_chunk_index=result.next_chunk_index
+        )
+
+    async def finish(
+            self,
+            params: Union[FinishMultipartUploadParams, Dict[str, Any], str] = None,
+            **kwargs: Any
+    ) -> ZenFile:
+        """Finish the multipart upload.
+        
+        Args:
+            params: Parameters as FinishMultipartUploadParams, dict, or session_id string
+            **kwargs: Parameters as keyword arguments (session_id)
+        """
+        # Handle different parameter formats
+        if params is None and kwargs:
+            session_id = kwargs["session_id"]
+        elif isinstance(params, str):
+            session_id = params
+        elif isinstance(params, dict):
+            session_id = params["session_id"]
+        else:
+            # FinishMultipartUploadParams object
+            session_id = params.session_id
+
+        result = await self.api.finish_multipart_upload(session_id)
+        return result
 
 
 class ZenStorage:
-    """Main storage class for FileZen operations."""
+    """Storage client for FileZen with upload capabilities."""
 
     def __init__(
-        self, options: Optional[Union[Dict[str, Any], ZenStorageOptions]] = None
-    ) -> None:
+            self,
+            *,
+            api_key: Optional[str] = None,
+            api_url: Optional[str] = None,
+            keep_uploads: bool = False
+    ):
         """Initialize ZenStorage.
 
         Args:
-            options: Configuration options
+            api_key: FileZen API key. If not provided, will use FILEZEN_API_KEY environment variable.
+            api_url: Custom API URL. Defaults to https://api.filezen.dev
+            keep_uploads: Whether to keep upload records in memory for tracking. Defaults to False.
+        
+        Examples:
+            # ✅ RECOMMENDED: Direct parameters with full IDE support
+            storage = ZenStorage(api_key="your_key", keep_uploads=True)
+            
+            # ✅ ENVIRONMENT VARIABLES: Most secure approach
+            storage = ZenStorage()  # Uses FILEZEN_API_KEY env var
+            
+            # ✅ MINIMAL: Just what you need
+            storage = ZenStorage(api_key="your_key")
         """
-        if isinstance(options, dict):
-            options_obj = ZenStorageOptions(
-                api_key=options.get("api_key"),
-                api_url=options.get("api_url"),
-                keep_uploads=bool(options.get("keep_uploads", False)),
-            )
-        elif options is None:
-            options_obj = ZenStorageOptions(
-                api_key=None,
-                api_url=None,
-                keep_uploads=False,
-            )
-        else:
-            options_obj = ZenStorageOptions(
-                api_key=options.api_key,
-                api_url=options.api_url,
-                keep_uploads=options.keep_uploads,
-            )
-
-        self.options = options_obj
-        self.api = ZenApi(options_obj.model_dump())
-        self.listeners: List[ZenStorageListener] = []
+        # Initialize ZenApi with direct parameters
+        self.api = ZenApi(api_key=api_key, api_url=api_url)
+        self._keep_uploads = keep_uploads
+        self.listeners: List[ZenUploadListener] = []
         self.uploads: Dict[str, ZenUpload] = {}
 
-    def add_listener(self, listener: ZenStorageListener) -> None:
+    @property
+    def multipart(self) -> ZenMultipartControl:
+        """Get multipart upload control."""
+        return ZenMultipartControl(self.api)
+
+    def add_listener(self, listener: ZenUploadListener) -> None:
         """Add an event listener.
 
         Args:
@@ -80,7 +246,7 @@ class ZenStorage:
         """
         self.listeners.append(listener)
 
-    def remove_listener(self, listener: ZenStorageListener) -> None:
+    def remove_listener(self, listener: ZenUploadListener) -> None:
         """Remove an event listener.
 
         Args:
@@ -116,185 +282,232 @@ class ZenStorage:
                 try:
                     callback(*args)
                 except Exception as e:
-                    print(f"Listener error in {event}: {e}")
+                    # Log error but don't break the upload process
+                    print(f"Error in listener {event}: {e}")
 
     def build_upload(
         self,
-        source: bytes,
-        options: Optional[Union[Dict[str, Any], UploadOptions]] = None,
+        source: ZenUploadSource,
+        options: Optional[Union[Dict[str, Any], ZenStorageUploadOptions]] = None,
     ) -> ZenUpload:
-        """Build an upload object.
+        """Build an upload object without starting it.
 
         Args:
-            source: File content as bytes
-            options: Upload options
+            source: File source (bytes, string URL, base64, or text)
+            options: Upload options as dict or ZenStorageUploadOptions
 
         Returns:
-            ZenUpload object
+            ZenUpload instance ready for upload
+
+        Examples:
+            # ✅ RECOMMENDED: Using dataclass for full IDE support
+            options = ZenStorageUploadOptions(
+                name="my_file.txt",
+                folder_id="folder123",
+                metadata={"category": "documents"}
+            )
+            upload = storage.build_upload(file_bytes, options)
+            
+            # ✅ DICT: Also supported for flexibility
+            upload = storage.build_upload(file_bytes, {
+                "name": "my_file.txt",
+                "folder_id": "folder123"
+            })
         """
-        if isinstance(options, dict):
-            options = UploadOptions(**options)
-        elif options is None:
-            raise ValueError("Upload options are required")
+        # Convert options to dataclass if needed
+        options = to_dataclass(ZenStorageUploadOptions, options)
 
-        local_id = str(uuid.uuid4())
+        # Determine file name and MIME type
+        name = options.name if options.name else "file"
+        mime_type = options.mime_type if options.mime_type else "application/octet-stream"
 
+        # Create upload instance
         upload = ZenUpload(
-            local_id=local_id,
-            name=options.name,
-            size=len(source),
-            mime_type=options.mime_type or "application/octet-stream",
+            name=name,
+            mime_type=mime_type,
             api=self.api,
             source=source,
-            options=options,
-            file=None,
-            error=None,
-            is_completed=False,
-            is_cancelled=False,
+            folder=options.folder,
+            metadata=options.metadata,
+            project_id=options.project_id,
+            folder_id=options.folder_id,
         )
 
-        # Store upload if keep_uploads is enabled
-        if self.options.keep_uploads:
-            self.uploads[local_id] = upload
+        # Store upload if tracking is enabled
+        if self._keep_uploads:
+            self.uploads[upload.local_id] = upload
             self._notify_listeners("on_uploads_change", self.get_uploads)
 
         return upload
 
     async def upload(
         self,
-        source: bytes,
-        options: Optional[Union[Dict[str, Any], UploadOptions]] = None,
+        source: ZenUploadSource,
+        options: Optional[Union[Dict[str, Any], ZenStorageUploadOptions]] = None,
+        **kwargs: Any
     ) -> ZenUpload:
-        """Upload a single file.
+        """Upload a file to FileZen.
 
         Args:
-            source: File content as bytes
-            options: Upload options
+            source: File source (bytes, string URL, base64, or text)
+            options: Upload options as dict or ZenStorageUploadOptions
+            **kwargs: Additional options as keyword arguments
 
         Returns:
-            Completed upload
+            ZenUpload instance with completed upload
+
+        Examples:
+            # ✅ RECOMMENDED: Using dataclass for full IDE support
+            options = ZenStorageUploadOptions(
+                name="my_file.txt",
+                folder_id="folder123",
+                metadata={"category": "documents"}
+            )
+            upload = await storage.upload(file_bytes, options)
+            
+            # ✅ DICT: Also supported for flexibility
+            upload = await storage.upload(file_bytes, {
+                "name": "my_file.txt",
+                "folder_id": "folder123"
+            })
+            
+            # ✅ KEYWORD ARGS: Quick and simple
+            upload = await storage.upload(file_bytes, name="my_file.txt")
         """
+        # Handle keyword arguments
+        if kwargs and options is None:
+            options = kwargs
+        elif kwargs and isinstance(options, dict):
+            options.update(kwargs)
+
+        # Build and execute upload
         upload = self.build_upload(source, options)
 
+        # Notify listeners
         self._notify_listeners("on_upload_start", upload)
 
         try:
+            # Perform upload
             await upload.upload()
+
+            # Notify completion
             self._notify_listeners("on_upload_complete", upload)
+
         except Exception as e:
+            # Notify error
             self._notify_listeners("on_upload_error", upload, e)
             raise
 
         return upload
 
-    async def bulk_upload(self, *uploads: Dict[str, Any]) -> List[ZenUpload]:
-        """Upload multiple files.
+    async def bulk_upload(self, *uploads: Union[Dict[str, Any], ZenStorageBulkItem]) -> List[ZenUpload]:
+        """Upload multiple files in parallel.
 
         Args:
-            *uploads: Upload items with 'source' and 'options' keys
+            *uploads: Upload items as dicts or ZenStorageBulkItem instances
 
         Returns:
             List of completed uploads
+
+        Examples:
+            # ✅ RECOMMENDED: Using dataclasses for full IDE support
+            items = [
+                ZenStorageBulkItem(
+                    source=file1_bytes,
+                    options=ZenStorageUploadOptions(name="file1.txt")
+                ),
+                ZenStorageBulkItem(
+                    source=file2_bytes,
+                    options=ZenStorageUploadOptions(name="file2.txt")
+                )
+            ]
+            uploads = await storage.bulk_upload(*items)
+            
+            # ✅ DICT: Also supported for flexibility
+            uploads = await storage.bulk_upload(
+                {"source": file1_bytes, "options": {"name": "file1.txt"}},
+                {"source": file2_bytes, "options": {"name": "file2.txt"}}
+            )
         """
+        # Convert dicts to dataclasses if needed
+        bulk_items = []
+        for item in uploads:
+            if isinstance(item, dict):
+                bulk_items.append(ZenStorageBulkItem.from_dict(item))
+            else:
+                bulk_items.append(item)
+
+        # Create uploads
         upload_objects = []
+        for item in bulk_items:
+            upload = self.build_upload(item.source, item.options)
+            upload_objects.append(upload)
 
-        # Build upload objects
-        for upload_item in uploads:
-            source = upload_item["source"]
-            options = upload_item["options"]
-            upload_obj = self.build_upload(source, options)
-            upload_objects.append(upload_obj)
-
-        # Start all uploads
+        # Notify listeners
         for upload in upload_objects:
             self._notify_listeners("on_upload_start", upload)
 
-        # Upload all files concurrently
+        # Execute uploads in parallel
         import asyncio
+        try:
+            results = await asyncio.gather(
+                *[upload.upload() for upload in upload_objects],
+                return_exceptions=True
+            )
 
-        tasks = [upload.upload() for upload in upload_objects]
-        results = await asyncio.gather(*tasks, return_exceptions=True)
+            # Handle results
+            completed_uploads = []
+            for i, result in enumerate(results):
+                if isinstance(result, Exception):
+                    # Notify error
+                    self._notify_listeners("on_upload_error", upload_objects[i], result)
+                    raise result
+                else:
+                    # Notify completion
+                    self._notify_listeners("on_upload_complete", result)
+                    completed_uploads.append(result)
 
-        # Process results
-        completed_uploads = []
-        for i, result in enumerate(results):
-            upload = upload_objects[i]
-            if isinstance(result, Exception):
-                self._notify_listeners("on_upload_error", upload, result)
-            else:
-                self._notify_listeners("on_upload_complete", upload)
-                completed_uploads.append(upload)
+            return completed_uploads
 
-        return completed_uploads
+        except Exception as e:
+            # Notify errors for all uploads
+            for upload in upload_objects:
+                self._notify_listeners("on_upload_error", upload, e)
+            raise
 
     def generate_signed_url(self, options: Dict[str, Any]) -> str:
-        """Generate a signed URL for direct uploads.
+        """Generate a signed URL for direct file access.
 
         Args:
-            options: Signed URL options with 'path', 'file_key', and optional 'expires_in'
+            options: URL generation options
 
         Returns:
             Signed URL string
+
+        Note:
+            This is a placeholder method. Implement based on your FileZen API.
         """
-        import hashlib
-        import hmac
-        import time
-        from urllib.parse import urlencode
-
-        path = options.get("path", "/files/upload")
-        file_key = options["file_key"]
-        expires_in = options.get("expires_in", 3600)
-
-        # Decode API key to get credentials
-        import base64
-
-        api_key = self.api.api_key
-        if not api_key:
-            raise ValueError("API key is required for signed URL generation")
-
-        decoded_credentials = base64.b64decode(api_key).decode("utf-8").split(",")
-        access_key = decoded_credentials[0]
-        secret_key = decoded_credentials[1]
-
-        # Calculate expiration time
-        expires_at = int(time.time()) + expires_in
-
-        # Create string to sign
-        string_to_sign = f"{file_key}/n{expires_at}"
-
-        # Generate signature
-        signature = hmac.new(
-            secret_key.encode("utf-8"), string_to_sign.encode("utf-8"), hashlib.sha256
-        ).hexdigest()
-
-        # Build signed URL
-        base_url = self.api.api_url.rstrip("/")
-        path = path.lstrip("/")
-        url = f"{base_url}/{path}"
-
-        # Add query parameters
-        params = {
-            "signature": signature,
-            "accessKey": access_key,
-            "expires": str(expires_at),
-        }
-
-        return f"{url}?{urlencode(params)}"
+        # This would typically call the FileZen API to generate a signed URL
+        # For now, return a placeholder
+        return f"https://api.filezen.dev/signed-url?{options}"
 
     async def delete_by_url(self, url: str) -> bool:
-        """Delete a file by URL.
+        """Delete a file by its URL.
 
         Args:
             url: File URL to delete
 
         Returns:
-            True if deletion was successful
+            True if successful
+
+        Examples:
+            # Delete a file by URL
+            success = await storage.delete_by_url("https://api.filezen.dev/files/123")
         """
-        result = await self.api.delete_file_by_url(url)
-        return bool(result.get("data", False))
+        return await self.api.delete_file_by_url(url)
 
     async def close(self) -> None:
-        """Close the storage and cleanup resources."""
+        """Close the storage client and cleanup resources."""
         await self.api.close()
 
     async def __aenter__(self) -> "ZenStorage":

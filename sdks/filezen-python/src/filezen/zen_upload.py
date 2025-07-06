@@ -1,49 +1,51 @@
 """Upload functionality for the FileZen Python SDK."""
 
-from typing import Optional
-
-from pydantic import BaseModel, Field
+import base64
+import re
+from typing import Optional, Dict, Any, Union
 
 from .constants import MULTIPART_CHUNK_SIZE, MULTIPART_THRESHOLD
+from .utils import is_url, is_base64, generate_local_id
 from .zen_api import ZenApi
-from .zen_error import ZenError, ZenUploadError
-from .zen_file import ZenFile
+from .zen_error import ZenError, ZenUploadError, build_zen_error
+from .types import ZenFile, ZenMetadata, to_dataclass
+
+# Type alias for upload sources
+ZenUploadSource = Union[bytes, str]
 
 
-class UploadOptions(BaseModel):
-    """Options for file upload."""
-
-    name: str = Field(..., description="Name of the file")
-    mime_type: Optional[str] = Field(None, description="MIME type of the file")
-    folder: Optional[str] = Field(None, description="Folder to upload to")
-
-    class Config:
-        """Pydantic configuration."""
-
-        extra = "forbid"
-
-
-class ZenUpload(BaseModel):
+class ZenUpload:
     """Represents a file upload operation."""
 
-    local_id: str = Field(..., description="Local upload identifier")
-    name: str = Field(..., description="Name of the file")
-    size: int = Field(..., description="Size of the file in bytes")
-    mime_type: str = Field(..., description="MIME type of the file")
-    file: Optional[ZenFile] = Field(None, description="Uploaded file information")
-    error: Optional[ZenError] = Field(None, description="Upload error if any")
-    is_completed: bool = Field(False, description="Whether upload is completed")
-    is_cancelled: bool = Field(False, description="Whether upload is cancelled")
+    def __init__(
+            self,
+            name: str,
+            mime_type: str,
+            api: ZenApi,
+            source: ZenUploadSource,
+            folder: Optional[str] = None,
+            metadata: Optional[ZenMetadata] = None,
+            project_id: Optional[str] = None,
+            folder_id: Optional[str] = None
+    ):
+        # Upload configuration
+        self.local_id = generate_local_id()
+        self.name = name
+        self.mime_type = mime_type
+        self.folder = folder
+        self.metadata = metadata
+        self.project_id = project_id
+        self.folder_id = folder_id
 
-    # Internal fields (no leading underscores for Pydantic v2 compatibility)
-    api: Optional[ZenApi] = Field(None, description="API client")
-    source: Optional[bytes] = Field(None, description="File source data")
-    options: Optional[UploadOptions] = Field(None, description="Upload options")
+        # Upload state (default values)
+        self.file: Optional[ZenFile] = None
+        self.error: Optional[ZenError] = None
+        self.is_completed: bool = False
+        self.is_cancelled: bool = False
 
-    class Config:
-        """Pydantic configuration."""
-
-        arbitrary_types_allowed = True
+        # Internal state
+        self.api = api
+        self.source = source
 
     async def upload(self) -> "ZenUpload":
         """Perform the upload operation.
@@ -55,15 +57,20 @@ class ZenUpload(BaseModel):
             raise ZenUploadError("Upload not properly initialized: api is None")
         if self.source is None:
             raise ZenUploadError("Upload not properly initialized: source is None")
-        if self.options is None:
-            raise ZenUploadError("Upload not properly initialized: options is None")
 
         try:
-            # Determine if we should use multipart upload
-            if self.size > MULTIPART_THRESHOLD:
-                await self._multipart_upload()
+            # Handle different source types
+            if isinstance(self.source, str):
+                # String sources - route to appropriate handlers
+                if is_url(self.source):
+                    await self._url_upload()
+                elif is_base64(self.source):
+                    await self._base64_upload()
+                else:
+                    await self._text_upload()
             else:
-                await self._regular_upload()
+                # Bytes source - route to bytes handler
+                await self._upload_from_bytes(self.source)
 
             self.is_completed = True
 
@@ -76,57 +83,69 @@ class ZenUpload(BaseModel):
 
         return self
 
-    async def _regular_upload(self) -> None:
-        """Perform a regular upload."""
+    async def _upload_from_bytes(self, source: bytes) -> None:
+        """Handle bytes sources - decide between single vs multipart upload."""
+        # For small files, use single upload
+        if len(source) <= MULTIPART_THRESHOLD:
+            await self._single_upload_from_bytes(source)
+        else:
+            await self._multipart_upload_from_bytes(source)
+
+    async def _single_upload_from_bytes(self, source: bytes) -> None:
+        """Perform a single upload for small bytes sources."""
         assert self.api is not None
-        assert self.source is not None
-        assert self.options is not None
-        # Perform actual upload
+
         result = await self.api.upload_file(
-            self.source,
+            source,
             {
-                "name": self.options.name,
-                "mimeType": self.options.mime_type or "application/octet-stream",
+                "name": self.name,
+                "mimeType": self.mime_type or "application/octet-stream",
+                "metadata": self.metadata,
+                "projectId": self.project_id,
+                "folderId": self.folder_id,
             },
         )
 
-        if result.get("error"):
-            raise ZenUploadError(result["error"].get("message", "Upload failed"))
+        if result.error:
+            raise ZenUploadError(result.error.get("message", "Upload failed"))
 
         # Use the API response directly - it should already match ZenFile structure
-        self.file = ZenFile(**result["data"])
+        self.file = result.file
 
-    async def _multipart_upload(self) -> None:
-        """Perform a multipart upload for large files."""
+    async def _multipart_upload_from_bytes(self, source: bytes) -> None:
+        """Perform a multipart upload for large bytes sources."""
         assert self.api is not None
-        assert self.source is not None
-        assert self.options is not None
+
+        file_size = len(source)
         # Initialize multipart upload
         init_result = await self.api.initialize_multipart_upload(
             {
-                "fileName": self.options.name,
-                "mimeType": self.options.mime_type or "application/octet-stream",
-                "totalSize": self.size,
+                "fileName": self.name,
+                "mimeType": self.mime_type or "application/octet-stream",
+                "totalSize": file_size,
                 "chunkSize": MULTIPART_CHUNK_SIZE,
+                "metadata": self.metadata,
+                "projectId": self.project_id,
+                "parentId": self.folder_id,
             }
         )
 
-        if init_result.get("error"):
+        if init_result.error:
             raise ZenUploadError(
-                init_result["error"].get(
+                init_result.error.get(
                     "message", "Multipart upload initialization failed"
                 )
             )
 
-        session_id = init_result["data"]["id"]
-        total_chunks = (self.size + MULTIPART_CHUNK_SIZE - 1) // MULTIPART_CHUNK_SIZE
+        session_id = init_result.id
+        total_chunks = (file_size + MULTIPART_CHUNK_SIZE - 1) // MULTIPART_CHUNK_SIZE
         current_chunk_index = 0
 
         while current_chunk_index < total_chunks:
             # Calculate chunk boundaries
             start = current_chunk_index * MULTIPART_CHUNK_SIZE
-            end = min(start + MULTIPART_CHUNK_SIZE, self.size)
-            chunk = self.source[start:end]
+            end = min(start + MULTIPART_CHUNK_SIZE, file_size)
+            chunk = source[start:end]
             chunk_size = len(chunk)
 
             # Upload chunk
@@ -134,30 +153,130 @@ class ZenUpload(BaseModel):
                 session_id, chunk, current_chunk_index, chunk_size
             )
 
-            if chunk_result.get("error"):
+            if chunk_result.error:
                 raise ZenUploadError(
-                    chunk_result["error"].get(
+                    chunk_result.error.get(
                         "message", f"Chunk {current_chunk_index} upload failed"
                     )
                 )
 
-            chunk_data = chunk_result["data"]
-
             # Check if upload is complete
-            if chunk_data.get("isComplete"):
-                if "file" in chunk_data:
-                    # Use the API response directly - it should already match ZenFile structure
-                    self.file = ZenFile(**chunk_data["file"])
+            if chunk_result.is_complete:
+                if chunk_result.file:
+                    self.file = chunk_result.file
                 break
 
             # Move to next chunk
-            current_chunk_index = chunk_data.get(
-                "nextChunkIndex", current_chunk_index + 1
-            )
+            current_chunk_index = chunk_result.next_chunk_index or current_chunk_index + 1
 
         if not self.file:
             raise ZenUploadError("Multipart upload did not complete as expected")
 
+    async def _url_upload(self) -> None:
+        """Perform upload from URL string source using streaming."""
+        assert self.api is not None
+        assert self.source is not None
+        assert isinstance(self.source, str)
+
+        # For URLs, we'll use streaming multipart upload since we don't know the size
+        session_result = await self.api.initialize_multipart_upload({
+            "fileName": self.name,
+            "mimeType": self.mime_type or "application/octet-stream",
+            "uploadMode": "streaming",
+            "metadata": self.metadata,
+            "projectId": self.project_id,
+            "parentId": self.folder_id,
+        })
+
+        if session_result.error:
+            raise build_zen_error(session_result.error)
+
+        session_id = session_result.id
+
+        # Stream from URL - fetch and upload chunks as they arrive
+        async with self.api.client.stream('GET', self.source) as response:
+            response.raise_for_status()
+
+            # Stream file content in chunks and upload immediately
+            async for chunk in response.aiter_bytes(MULTIPART_CHUNK_SIZE):
+                if chunk:
+                    # Upload chunk immediately without storing chunk_index
+                    chunk_result = await self.api.upload_chunk(session_id, chunk, 0, len(chunk))
+                    if chunk_result.error:
+                        raise build_zen_error(chunk_result.error)
+
+                    if chunk_result.is_complete:
+                        self.file = chunk_result.file
+                        return
+
+        # Finish multipart upload for streaming mode
+        finish_result = await self.api.finish_multipart_upload(session_id)
+        self.file = finish_result
+
+    async def _base64_upload(self) -> None:
+        """Perform upload from base64 string source."""
+        assert self.api is not None
+        assert self.source is not None
+        assert isinstance(self.source, str)
+
+        params = {
+            "name": self.name,
+            "mimeType": self.mime_type or "application/octet-stream",
+            "metadata": self.metadata,
+            "projectId": self.project_id,
+            "folderId": self.folder_id,
+        }
+
+        try:
+            # Handle data URL format
+            if self.source.startswith('data:'):
+                header, data = self.source.split(',', 1)
+                # Extract MIME type from data URL
+                mime_match = re.search(r'data:([^;]+)', header)
+                if mime_match and not params.get("mimeType"):
+                    params["mimeType"] = mime_match.group(1)
+            else:
+                data = self.source
+
+            # Decode base64
+            file_bytes = base64.b64decode(data)
+
+            # Upload the decoded bytes
+            result = await self.api.upload_file(file_bytes, params)
+
+        except Exception as e:
+            raise ZenUploadError(f"Failed to decode base64: {str(e)}")
+
+        if result.error:
+            raise ZenUploadError(result.error.get("message", "Base64 upload failed"))
+
+        self.file = result.file
+
+    async def _text_upload(self) -> None:
+        """Perform upload from text string source."""
+        assert self.api is not None
+        assert self.source is not None
+        assert isinstance(self.source, str)
+
+        params = {
+            "name": self.name,
+            "mimeType": self.mime_type or "text/plain",  # Default to text/plain for text uploads
+            "metadata": self.metadata,
+            "projectId": self.project_id,
+            "folderId": self.folder_id,
+        }
+
+        # Convert text to bytes
+        file_bytes = self.source.encode('utf-8')
+
+        # Upload the text as bytes
+        result = await self.api.upload_file(file_bytes, params)
+
+        if result.error:
+            raise ZenUploadError(result.error.get("message", "Text upload failed"))
+
+        self.file = result.file
+
     def cancel(self) -> None:
         """Cancel the upload operation."""
-        self.is_cancelled = True
+        self.is_cancelled = True 
