@@ -3,27 +3,26 @@
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Union
 
-from .utils import is_url, is_base64
+from .types import (
+    FinishMultipartUploadParams,
+    MultipartChunkUploadResult,
+    MultipartUploadChunkParams,
+    StartMultipartUploadParams,
+    ZenFile,
+    ZenStorageBulkItem,
+    ZenStorageUploadOptions,
+    ZenUploadSource,
+    to_dataclass,
+)
 from .zen_api import ZenApi
 from .zen_error import ZenError
 from .zen_upload import ZenUpload
-from .types import (
-    ZenFile,
-    ZenUploadSource,
-    ZenMetadata,
-    ZenStorageUploadOptions,
-    ZenStorageBulkItem,
-    StartMultipartUploadParams,
-    MultipartUploadChunkParams,
-    FinishMultipartUploadParams,
-    MultipartChunkUploadResult,
-    to_dataclass
-)
 
 
 @dataclass
 class ZenProgress:
     """Progress information for uploads."""
+
     bytes: Optional[int] = None
     total: Optional[int] = None
     percent: Optional[float] = None
@@ -64,12 +63,12 @@ class ZenMultipartControl:
         self.api = api
 
     async def start(
-            self,
-            params: Union[StartMultipartUploadParams, Dict[str, Any]] = None,
-            **kwargs: Any
+        self,
+        params: Union[StartMultipartUploadParams, Dict[str, Any]] = None,
+        **kwargs: Any,
     ) -> Dict[str, str]:
         """Start a multipart upload session.
-        
+
         Args:
             params: Parameters as StartMultipartUploadParams or dict
             **kwargs: Parameters as keyword arguments (file_name, mime_type, etc.)
@@ -86,7 +85,7 @@ class ZenMultipartControl:
                 ("metadata", "metadata"),
                 ("upload_mode", "uploadMode"),
                 ("parent_id", "parentId"),
-                ("project_id", "projectId")
+                ("project_id", "projectId"),
             ]:
                 if key in kwargs:
                     api_params[api_key] = kwargs[key]
@@ -101,7 +100,7 @@ class ZenMultipartControl:
                 ("metadata", "metadata"),
                 ("upload_mode", "uploadMode"),
                 ("parent_id", "parentId"),
-                ("project_id", "projectId")
+                ("project_id", "projectId"),
             ]:
                 if key in params:
                     api_params[api_key] = params[key]
@@ -128,17 +127,19 @@ class ZenMultipartControl:
         result = await self.api.initialize_multipart_upload(api_params)
 
         if result.error:
-            raise ZenError(result.error.get("message", "Failed to start multipart upload"))
+            raise ZenError(
+                result.error.get("message", "Failed to start multipart upload")
+            )
 
         return {"id": result.id}
 
     async def upload_part(
-            self,
-            params: Union[MultipartUploadChunkParams, Dict[str, Any]] = None,
-            **kwargs: Any
+        self,
+        params: Union[MultipartUploadChunkParams, Dict[str, Any]] = None,
+        **kwargs: Any,
     ) -> MultipartChunkUploadResult:
         """Upload a part of the multipart upload.
-        
+
         Args:
             params: Parameters as MultipartUploadChunkParams or dict
             **kwargs: Parameters as keyword arguments (session_id, chunk, etc.)
@@ -158,12 +159,7 @@ class ZenMultipartControl:
             chunk = params.chunk
             chunk_index = params.chunk_index or 0
 
-        result = await self.api.upload_chunk(
-            session_id,
-            chunk,
-            chunk_index,
-            len(chunk)
-        )
+        result = await self.api.upload_chunk(session_id, chunk, chunk_index, len(chunk))
 
         if result.error:
             raise ZenError(result.error.get("message", "Failed to upload chunk"))
@@ -171,16 +167,16 @@ class ZenMultipartControl:
         return MultipartChunkUploadResult(
             is_complete=result.is_complete,
             file=result.file,
-            next_chunk_index=result.next_chunk_index
+            next_chunk_index=result.next_chunk_index,
         )
 
     async def finish(
-            self,
-            params: Union[FinishMultipartUploadParams, Dict[str, Any], str] = None,
-            **kwargs: Any
+        self,
+        params: Union[FinishMultipartUploadParams, Dict[str, Any], str] = None,
+        **kwargs: Any,
     ) -> ZenFile:
         """Finish the multipart upload.
-        
+
         Args:
             params: Parameters as FinishMultipartUploadParams, dict, or session_id string
             **kwargs: Parameters as keyword arguments (session_id)
@@ -204,11 +200,11 @@ class ZenStorage:
     """Storage client for FileZen with upload capabilities."""
 
     def __init__(
-            self,
-            *,
-            api_key: Optional[str] = None,
-            api_url: Optional[str] = None,
-            keep_uploads: bool = False
+        self,
+        *,
+        api_key: Optional[str] = None,
+        api_url: Optional[str] = None,
+        keep_uploads: bool = False,
     ):
         """Initialize ZenStorage.
 
@@ -216,14 +212,14 @@ class ZenStorage:
             api_key: FileZen API key. If not provided, will use FILEZEN_API_KEY environment variable.
             api_url: Custom API URL. Defaults to https://api.filezen.dev
             keep_uploads: Whether to keep upload records in memory for tracking. Defaults to False.
-        
+
         Examples:
             # ✅ RECOMMENDED: Direct parameters with full IDE support
             storage = ZenStorage(api_key="your_key", keep_uploads=True)
-            
+
             # ✅ ENVIRONMENT VARIABLES: Most secure approach
             storage = ZenStorage()  # Uses FILEZEN_API_KEY env var
-            
+
             # ✅ MINIMAL: Just what you need
             storage = ZenStorage(api_key="your_key")
         """
@@ -307,7 +303,7 @@ class ZenStorage:
                 metadata={"category": "documents"}
             )
             upload = storage.build_upload(file_bytes, options)
-            
+
             # ✅ DICT: Also supported for flexibility
             upload = storage.build_upload(file_bytes, {
                 "name": "my_file.txt",
@@ -319,7 +315,9 @@ class ZenStorage:
 
         # Determine file name and MIME type
         name = options.name if options.name else "file"
-        mime_type = options.mime_type if options.mime_type else "application/octet-stream"
+        mime_type = (
+            options.mime_type if options.mime_type else "application/octet-stream"
+        )
 
         # Create upload instance
         upload = ZenUpload(
@@ -344,7 +342,7 @@ class ZenStorage:
         self,
         source: ZenUploadSource,
         options: Optional[Union[Dict[str, Any], ZenStorageUploadOptions]] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> ZenUpload:
         """Upload a file to FileZen.
 
@@ -364,13 +362,13 @@ class ZenStorage:
                 metadata={"category": "documents"}
             )
             upload = await storage.upload(file_bytes, options)
-            
+
             # ✅ DICT: Also supported for flexibility
             upload = await storage.upload(file_bytes, {
                 "name": "my_file.txt",
                 "folder_id": "folder123"
             })
-            
+
             # ✅ KEYWORD ARGS: Quick and simple
             upload = await storage.upload(file_bytes, name="my_file.txt")
         """
@@ -400,7 +398,9 @@ class ZenStorage:
 
         return upload
 
-    async def bulk_upload(self, *uploads: Union[Dict[str, Any], ZenStorageBulkItem]) -> List[ZenUpload]:
+    async def bulk_upload(
+        self, *uploads: Union[Dict[str, Any], ZenStorageBulkItem]
+    ) -> List[ZenUpload]:
         """Upload multiple files in parallel.
 
         Args:
@@ -422,7 +422,7 @@ class ZenStorage:
                 )
             ]
             uploads = await storage.bulk_upload(*items)
-            
+
             # ✅ DICT: Also supported for flexibility
             uploads = await storage.bulk_upload(
                 {"source": file1_bytes, "options": {"name": "file1.txt"}},
@@ -449,10 +449,10 @@ class ZenStorage:
 
         # Execute uploads in parallel
         import asyncio
+
         try:
             results = await asyncio.gather(
-                *[upload.upload() for upload in upload_objects],
-                return_exceptions=True
+                *[upload.upload() for upload in upload_objects], return_exceptions=True
             )
 
             # Handle results

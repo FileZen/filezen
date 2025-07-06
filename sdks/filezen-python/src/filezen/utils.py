@@ -17,13 +17,13 @@ def is_url(source: str) -> bool:
 def is_base64(source: str) -> bool:
     """Check if source is base64 encoded."""
     # Check for data URL format
-    if source.startswith('data:'):
+    if source.startswith("data:"):
         return True
 
     # Check for plain base64
     try:
         # Base64 should only contain valid characters
-        base64_pattern = re.compile(r'^[A-Za-z0-9+/]*={0,2}$')
+        base64_pattern = re.compile(r"^[A-Za-z0-9+/]*={0,2}$")
         if not base64_pattern.match(source):
             return False
 
@@ -43,6 +43,7 @@ def is_base64(source: str) -> bool:
 
 def generate_local_id() -> str:
     """Generate a unique local ID."""
-    import time
     import random
+    import time
+
     return f"{int(time.time() * 1000)}-{random.randint(1000, 9999)}"

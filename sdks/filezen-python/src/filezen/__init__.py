@@ -4,35 +4,35 @@ FileZen Python SDK
 A Python SDK for FileZen, providing easy-to-use file upload and management capabilities.
 """
 
-from .zen_error import ZenError
-from .zen_storage import (
-    ZenStorage,
-    ZenUploadListener,
-    ZenProgress,
-    ZenMultipartControl,
-)
-from .zen_upload import ZenUpload
-from .zen_api import ZenApi
 from .types import (
-    ZenFile,
-    ZenProject,
-    ZenList,
-    ZenMetadata,
-    ZenUploadSource,
-    ZenUploaderParams,
-    ZenStorageUploadOptions,
-    ZenStorageBulkItem,
-    UploadMode,
-    StartMultipartUploadParams,
-    MultipartUploadChunkParams,
     FinishMultipartUploadParams,
     MultipartChunkUploadResult,
+    MultipartUploadChunkParams,
+    StartMultipartUploadParams,
+    UploadMode,
     ZenApiResponse,
-    ZenUploadResponse,
-    ZenMultipartInitResponse,
+    ZenFile,
+    ZenList,
+    ZenMetadata,
     ZenMultipartChunkResponse,
-    to_dataclass
+    ZenMultipartInitResponse,
+    ZenProject,
+    ZenStorageBulkItem,
+    ZenStorageUploadOptions,
+    ZenUploaderParams,
+    ZenUploadResponse,
+    ZenUploadSource,
+    to_dataclass,
 )
+from .zen_api import ZenApi
+from .zen_error import ZenError
+from .zen_storage import (
+    ZenMultipartControl,
+    ZenProgress,
+    ZenStorage,
+    ZenUploadListener,
+)
+from .zen_upload import ZenUpload
 
 __version__ = "0.1.0"
 __all__ = [
@@ -51,6 +51,7 @@ __all__ = [
     "ZenStorageUploadOptions",
     "ZenStorageBulkItem",
     "ZenMultipartControl",
+    "UploadMode",
     "StartMultipartUploadParams",
     "MultipartUploadChunkParams",
     "FinishMultipartUploadParams",
@@ -60,5 +61,5 @@ __all__ = [
     "ZenMultipartInitResponse",
     "ZenMultipartChunkResponse",
     "to_dataclass",
-    "__version__"
+    "__version__",
 ]
