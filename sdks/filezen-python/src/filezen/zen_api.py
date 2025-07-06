@@ -1,7 +1,7 @@
 """API communication for the FileZen Python SDK."""
 
 import os
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Optional, Union, cast
 
 import httpx
 
@@ -92,6 +92,7 @@ class ZenApi:
         """
         # Convert dict to dataclass if needed
         params = to_dataclass(ZenUploaderParams, params)
+        params = cast(ZenUploaderParams, params)
 
         try:
             # Prepare multipart form data
@@ -138,6 +139,7 @@ class ZenApi:
         """
         # Convert dict to dataclass if needed
         params = to_dataclass(StartMultipartUploadParams, params)
+        params = cast(StartMultipartUploadParams, params)
 
         try:
             # Convert dataclass to dict for API
@@ -146,11 +148,12 @@ class ZenApi:
                 "mimeType": params.mime_type,
             }
             if params.total_size is not None:
-                api_params["totalSize"] = params.total_size
+                api_params["totalSize"] = str(params.total_size)
             if params.chunk_size is not None:
-                api_params["chunkSize"] = params.chunk_size
+                api_params["chunkSize"] = str(params.chunk_size)
             if params.metadata is not None:
-                api_params["metadata"] = params.metadata
+                import json
+                api_params["metadata"] = json.dumps(params.metadata)
             if params.upload_mode is not None:
                 api_params["uploadMode"] = params.upload_mode.value
             if params.parent_id is not None:

@@ -1,7 +1,7 @@
 """Main storage class for the FileZen Python SDK."""
 
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, cast
 
 from .types import (
     FinishMultipartUploadParams,
@@ -312,6 +312,7 @@ class ZenStorage:
         """
         # Convert options to dataclass if needed
         options = to_dataclass(ZenStorageUploadOptions, options)
+        options = cast(ZenStorageUploadOptions, options)
 
         # Determine file name and MIME type
         name = options.name if options.name else "file"
@@ -467,7 +468,8 @@ class ZenStorage:
                     self._notify_listeners("on_upload_complete", result)
                     completed_uploads.append(result)
 
-            return completed_uploads
+            # Filter out exceptions from the result list for correct return type
+            return [u for u in completed_uploads if isinstance(u, ZenUpload)]
 
         except Exception as e:
             # Notify errors for all uploads
