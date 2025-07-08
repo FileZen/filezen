@@ -1,22 +1,13 @@
 {
+  "extends": "@repo/typescript-config/nestjs.json",
+  "ts-node": {
+    "require": [
+      "tsconfig-paths/register"
+    ]
+  },
   "compilerOptions": {
-    "module": "commonjs",
-    "declaration": true,
-    "removeComments": true,
-    "emitDecoratorMetadata": true,
-    "experimentalDecorators": true,
-    "allowSyntheticDefaultImports": true,
-    "target": "ES2021",
-    "sourceMap": true,
     "outDir": "./dist",
     "baseUrl": "./",
-    "incremental": true,
-    "skipLibCheck": true,
-    "strictNullChecks": false,
-    "noImplicitAny": false,
-    "strictBindCallApply": false,
-    "forceConsistentCasingInFileNames": false,
-    "noFallthroughCasesInSwitch": false,
     "paths": {
       "@filezen/js": [
         "../../sdks/filezen-js/src"
@@ -25,5 +16,8 @@
         "../../sdks/filezen-nest/src"
       ]
     }
-  }
+  },
+  "exclude": [
+    "../../sdks/**/*"
+  ]
 }

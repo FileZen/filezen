@@ -32,6 +32,8 @@ import { FileZenModule } from '@filezen/nest';
 export class AppModule {}
 ```
 
+**Note**: The FileZen module automatically sets `keepUploads: false` by default for optimal server-side usage.
+
 ### 2. Inject ZenStorage
 
 ```typescript
@@ -68,6 +70,222 @@ export class FileService {
 }
 ```
 
+## URL Presigning Controller
+
+The FileZen module includes a built-in controller for generating signed URLs for direct file uploads. This is useful for client-side uploads where you want to bypass your server.
+
+### Basic Usage
+
+By default, the controller is enabled and available at `POST /upload/sign`:
+
+```typescript
+// POST /upload/sign
+{
+  "path": "/files/upload",
+  "fileKey": "my-file.jpg",
+  "expiresIn": 3600 // optional, defaults to 1 hour
+}
+
+// Response
+{
+  "url": "https://api.filezen.dev/files/upload?signature=...&accessKey=...&expires=..."
+}
+```
+
+### Controller Configuration
+
+You can customize the controller behavior when setting up the module:
+
+```typescript
+FileZenModule.forRoot({
+  apiKey: 'your-api-key',
+  controller: {
+    enabled: true, // Enable/disable the controller (default: true)
+    path: 'custom/upload/sign', // Custom path (default: 'upload/sign')
+  }
+})
+```
+
+**Note**: The controller is enabled by default. Set `enabled: false` to disable it.
+
+### Authentication
+
+You can add authentication to the controller by providing a middleware function:
+
+```typescript
+import { Injectable } from '@nestjs/common';
+import { FileZenModule } from '@filezen/nest';
+
+@Injectable()
+export class AuthService {
+  async validateRequest(request: any): Promise<boolean> {
+    // Your authentication logic here
+    const token = request.headers.authorization?.replace('Bearer ', '');
+    if (!token) return false;
+    
+    // Validate token, check user permissions, etc.
+    return await this.validateToken(token);
+  }
+}
+
+@Module({
+  imports: [
+    FileZenModule.forRoot({
+      apiKey: 'your-api-key',
+      controller: {
+        enabled: true,
+        path: 'upload/sign',
+        middleware: (request) => {
+          // You can inject services here if needed
+          return this.authService.validateRequest(request);
+        }
+      }
+    }),
+  ],
+})
+export class AppModule {}
+```
+
+**Note**: The middleware function should return `false` to reject the request. If the middleware returns `false`, the controller will throw a `BadRequestException` with the message "Middleware not passed". Any other return value (including `true`, `undefined`, `null`, etc.) will allow the request to proceed.
+
+### Custom Request Types
+
+You can specify custom request types for better type safety:
+
+```typescript
+interface CustomRequest {
+  user: { id: string; role: string };
+  headers: { authorization?: string };
+}
+
+FileZenModule.forRoot({
+  apiKey: 'your-api-key',
+  controller: {
+    middleware: (request: CustomRequest) => {
+      return request.user.role === 'admin';
+    }
+  }
+})
+```
+
+**Note**: The middleware function should return `false` to reject the request. If the middleware returns `false`, the controller will throw a `BadRequestException` with the message "Middleware not passed". Any other return value (including `true`, `undefined`, `null`, etc.) will allow the request to proceed.
+
+### Custom Controller Path
+
+You can change the controller path to match your API structure:
+
+```typescript
+FileZenModule.forRoot({
+  apiKey: 'your-api-key',
+  controller: {
+    path: 'api/v1/files/presign', // Custom path
+  }
+})
+```
+
+### Disable Controller
+
+If you don't need the presigning functionality, you can disable it:
+
+```typescript
+FileZenModule.forRoot({
+  apiKey: 'your-api-key',
+  controller: {
+    enabled: false, // Disable the controller
+  }
+})
+```
+
+### Manual Controller Setup
+
+If you need more control, you can create your own controller using the factory function:
+
+```typescript
+import { Module } from '@nestjs/common';
+import { FileZenModule, createFileZenController } from '@filezen/nest';
+
+@Module({
+  imports: [
+    FileZenModule.forRoot({
+      apiKey: 'your-api-key',
+      controller: { enabled: false }, // Disable default controller
+    }),
+  ],
+  controllers: [
+    // Create custom controller with your own logic
+    createFileZenController({
+      path: 'custom/presign',
+    }),
+  ],
+})
+export class AppModule {}
+```
+
+### Custom Controller with Additional Logic
+
+```typescript
+import { Module, Controller, Post, Body, UseGuards } from '@nestjs/common';
+import { FileZenModule, createFileZenController } from '@filezen/nest';
+import { AuthGuard } from '@nestjs/passport';
+
+// Create custom controller with additional decorators
+const CustomFileZenController = createFileZenController({
+  path: 'secure/upload/sign'
+});
+
+// Extend the controller with additional functionality
+@Controller('secure/upload/sign')
+export class SecureFileZenController extends CustomFileZenController {
+  @UseGuards(AuthGuard('jwt'))
+  @Post()
+  async generateSignedUrl(@Body() body: SignedUrlRequest) {
+    // Add custom logic before generating signed URL
+    console.log('Generating signed URL for:', body.fileKey);
+    
+    return super.generateSignedUrl(body);
+  }
+}
+
+@Module({
+  imports: [
+    FileZenModule.forRoot({
+      apiKey: process.env.FILEZEN_API_KEY,
+      controller: { enabled: false }, // Disable default controller
+    }),
+  ],
+  controllers: [SecureFileZenController],
+})
+export class AppModule {}
+```
+
+### Client-Side Usage
+
+Once you have the signed URL, you can use it directly from the client:
+
+```javascript
+// Get signed URL from your Nest.js server
+const response = await fetch('/upload/sign', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    path: '/files/upload',
+    fileKey: 'my-file.jpg',
+    expiresIn: 3600
+  })
+});
+
+const { url } = await response.json();
+
+// Upload directly to FileZen using the signed URL
+const formData = new FormData();
+formData.append('file', file);
+
+await fetch(url, {
+  method: 'POST',
+  body: formData
+});
+```
+
 ## Configuration Options
 
 ### Static Configuration
@@ -78,6 +296,11 @@ FileZenModule.forRoot({
   baseURL: 'https://api.filezen.com',
   keepUploads: false, // Default for Nest.js (server-side)
   global: true, // Make the module global
+  controller: {
+    enabled: true,
+    path: 'upload/sign',
+    middleware: (request) => Promise<boolean>,
+  }
 })
 ```
 
@@ -89,6 +312,11 @@ FileZenModule.forRootAsync({
     apiKey: configService.get('FILEZEN_API_KEY'),
     baseURL: configService.get('FILEZEN_BASE_URL'),
     keepUploads: false, // Default for Nest.js (server-side)
+    controller: {
+      enabled: true,
+      path: 'upload/sign',
+      middleware: (request) => configService.get('AUTH_ENABLED') ? validateRequest(request) : true,
+    }
   }),
   inject: [ConfigService],
   global: true,
@@ -173,6 +401,17 @@ Delete a file by its URL.
 await this.zenStorage.deleteByUrl('https://filezen.com/file-url');
 ```
 
+#### `generateSignedUrl(options)`
+Generate a signed URL for direct uploads.
+
+```typescript
+const signedUrl = await this.zenStorage.generateSignedUrl({
+  path: '/files/upload',
+  fileKey: 'my-file.jpg',
+  expiresIn: 3600
+});
+```
+
 #### `addListener(listener)`
 Add a listener for upload events.
 
@@ -201,116 +440,119 @@ Get currently active uploads (only available if `keepUploads: true`).
 ```typescript
 interface FileZenModuleOptions extends ZenStorageOptions {
   global?: boolean;
+  controller?: FileZenControllerOptions;
 }
 ```
 
-### FileZenModuleAsyncOptions
+### FileZenControllerOptions
 
 ```typescript
-interface FileZenModuleAsyncOptions {
-  global?: boolean;
-  useFactory: (...args: any[]) => Promise<ZenStorageOptions> | ZenStorageOptions;
-  inject?: any[];
+interface FileZenControllerOptions {
+  path?: string; // Default: 'upload/sign'
+  enabled?: boolean; // Default: true
+  middleware?: (request: any) => Promise<boolean> | boolean;
+}
+```
+
+**Note**: The middleware function should return `false` to reject the request. If the middleware returns `false`, the controller will throw a `BadRequestException` with the message "Middleware not passed". Any other return value (including `true`, `undefined`, `null`, etc.) will allow the request to proceed.
+
+### SignedUrlRequest
+
+```typescript
+interface SignedUrlRequest {
+  path: string;
+  fileKey: string;
+  expiresIn?: number; // seconds
+}
+```
+
+### SignedUrlResponse
+
+```typescript
+interface SignedUrlResponse {
+  url: string;
 }
 ```
 
 ## Examples
 
-### File Upload Controller
+### Complete Example with Authentication
 
 ```typescript
-import { Controller, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { ZenStorage } from '@filezen/js';
-import { InjectZenStorage } from '@filezen/nest';
+import { Module, Injectable } from '@nestjs/common';
+import { FileZenModule } from '@filezen/nest';
+import { JwtService } from '@nestjs/jwt';
 
-@Controller('files')
-export class FilesController {
-  constructor(
-    @InjectZenStorage()
-    private readonly zenStorage: ZenStorage
-  ) {}
+@Injectable()
+export class AuthService {
+  constructor(private jwtService: JwtService) {}
 
-  @Post('upload')
-  @UseInterceptors(FileInterceptor('file'))
-  async uploadFile(@UploadedFile() file: Express.Multer.File) {
-    const upload = await this.zenStorage.upload(file, {
-      folder: 'uploads',
-    });
-    
-    return {
-      id: upload.id,
-      url: upload.url,
-      status: upload.status,
-    };
+  async validateRequest(request: any): Promise<boolean> {
+    try {
+      const token = request.headers.authorization?.replace('Bearer ', '');
+      if (!token) return false;
+      
+      const payload = await this.jwtService.verifyAsync(token);
+      return !!payload.userId;
+    } catch {
+      return false;
+    }
   }
 }
-```
-
-### With Configuration Service
-
-```typescript
-import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { FileZenModule } from '@filezen/nest';
 
 @Module({
   imports: [
-    ConfigModule.forRoot(),
-    FileZenModule.forRootAsync({
-      useFactory: (configService: ConfigService) => ({
-        apiKey: configService.get('FILEZEN_API_KEY'),
-        baseURL: configService.get('FILEZEN_BASE_URL'),
-        keepUploads: false, // Default for server-side
-      }),
-      inject: [ConfigService],
+    FileZenModule.forRoot({
+      apiKey: process.env.FILEZEN_API_KEY,
+      controller: {
+        enabled: true,
+        path: 'api/files/presign',
+        middleware: (request) => {
+          return this.authService.validateRequest(request);
+        }
+      }
     }),
   ],
+  providers: [AuthService],
 })
 export class AppModule {}
 ```
 
-### Global Module Usage
+### Custom Controller with Additional Logic
 
 ```typescript
-// In your main module
-FileZenModule.forRoot({
-  apiKey: 'your-api-key',
-  global: true, // Makes ZenStorage available globally
+import { Module, Controller, Post, Body, UseGuards } from '@nestjs/common';
+import { FileZenModule, createFileZenController } from '@filezen/nest';
+import { AuthGuard } from '@nestjs/passport';
+
+// Create custom controller with additional decorators
+const CustomFileZenController = createFileZenController({
+  path: 'secure/upload/sign'
+});
+
+// Extend the controller with additional functionality
+@Controller('secure/upload/sign')
+export class SecureFileZenController extends CustomFileZenController {
+  @UseGuards(AuthGuard('jwt'))
+  @Post()
+  async generateSignedUrl(@Body() body: SignedUrlRequest) {
+    // Add custom logic before generating signed URL
+    console.log('Generating signed URL for:', body.fileKey);
+    
+    return super.generateSignedUrl(body);
+  }
+}
+
+@Module({
+  imports: [
+    FileZenModule.forRoot({
+      apiKey: process.env.FILEZEN_API_KEY,
+      controller: { enabled: false }, // Disable default controller
+    }),
+  ],
+  controllers: [SecureFileZenController],
 })
-
-// In any service across your app
-@Injectable()
-export class AnyService {
-  constructor(
-    @InjectZenStorage()
-    private readonly zenStorage: ZenStorage
-  ) {}
-}
-```
-
-### Upload Progress Tracking (with keepUploads enabled)
-
-```typescript
-@Injectable()
-export class FileService {
-  constructor(
-    @InjectZenStorage()
-    private readonly zenStorage: ZenStorage
-  ) {
-    // Only works if keepUploads: true
-    this.zenStorage.addListener({
-      onUploadProgress: (upload, progress) => {
-        console.log(`Upload ${upload.localId}: ${progress}%`);
-      },
-    });
-  }
-
-  getActiveUploads() {
-    // Only works if keepUploads: true
-    return this.zenStorage.activeUploads;
-  }
-}
+export class AppModule {}
 ```
 
 ## License

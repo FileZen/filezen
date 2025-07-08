@@ -2,6 +2,7 @@ import { Module, DynamicModule, Provider } from '@nestjs/common';
 import { FileZenModuleOptions, FileZenModuleAsyncOptions } from './filezen.types';
 import { FILEZEN_MODULE_OPTIONS, FILEZEN_STORAGE } from './filezen.constants';
 import { ZenStorage } from '@filezen/js';
+import { createFileZenController } from './filezen.controller';
 
 @Module({})
 export class FileZenModule {
@@ -9,7 +10,7 @@ export class FileZenModule {
    * Register the FileZen module with static options
    */
   static forRoot(options: FileZenModuleOptions = {}): DynamicModule {
-    const { global, ...zenOptions } = options;
+    const { global, controller, ...zenOptions } = options;
     
     // Set keepUploads to false by default for Nest.js (server-side usage)
     const defaultOptions = {
@@ -31,9 +32,18 @@ export class FileZenModule {
       },
     ];
 
+    const controllers = [];
+    
+    // Add controller if enabled
+    if (controller?.enabled !== false) {
+      const FileZenController = createFileZenController(controller);
+      controllers.push(FileZenController);
+    }
+
     return {
       module: FileZenModule,
       providers,
+      controllers,
       exports: [FILEZEN_STORAGE],
       global,
     };
@@ -67,9 +77,17 @@ export class FileZenModule {
       },
     ];
 
+    const controllers = [];
+    
+    // For async options, we'll use the default controller
+    // Users can override this by providing controller options in their factory
+    const FileZenController = createFileZenController();
+    controllers.push(FileZenController);
+
     return {
       module: FileZenModule,
       providers,
+      controllers,
       exports: [FILEZEN_STORAGE],
       global,
     };
