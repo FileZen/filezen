@@ -12,12 +12,19 @@ export const buildZenError = (error: any) => {
   if (error instanceof ZenError) {
     return error;
   }
-  if (error instanceof AxiosError && error.response?.data) {
-    return new ZenError(
-      error.response.status,
-      error.response.data?.message ?? error.response.statusText,
-      error.response.data,
-    );
+  if (error instanceof AxiosError) {
+    if (error.response?.data) {
+      return new ZenError(
+        error.response.status,
+        error.response.data?.message ?? error.response.statusText,
+        error.response.data,
+      );
+    } else if (error.message) {
+      return new ZenError(
+        error.status ?? -1,
+        error.message ?? 'Oops, something went wrong',
+      );
+    }
   }
   return new ZenError(-1, 'Oops, something went wrong');
 };

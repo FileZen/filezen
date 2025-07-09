@@ -4,7 +4,7 @@ import {
   ZenStorageUploadOptions,
   ZenUploadSource,
 } from './types';
-import { extractFileInfoFromUrl } from './utils';
+import { extractFileInfoFromUrl, getMimeTypeFromName } from './utils';
 import { ZenError } from './ZenError';
 import { ZenUploader } from './ZenUploader';
 
@@ -44,7 +44,7 @@ export class ZenUpload {
     options?: ZenStorageUploadOptions,
   ): ZenUpload {
     let targetName: string | undefined = options?.name;
-    let targetMimeType = options?.mimeType ?? 'application/octet-stream';
+    let targetMimeType = options?.mimeType;
     if (source instanceof File && !targetName) {
       targetName = source.name;
     }
@@ -60,6 +60,10 @@ export class ZenUpload {
     }
     if (!targetName) {
       throw new Error('`name` is required for upload sources other than File');
+    }
+    if (!targetMimeType) {
+      targetMimeType =
+        getMimeTypeFromName(targetName) ?? 'application/octet-stream';
     }
     const resultFileName = options?.folder
       ? `${options.folder}/${targetName}`
@@ -99,17 +103,8 @@ export class ZenUpload {
     this.listeners = this.listeners.filter((l) => l !== listener);
   }
 
-  notifyStart() {
-    this.listeners.forEach((listener: ZenUploadListener) => {
-      listener.onStart?.(this);
-    });
-  }
-
   set progress(progress: ZenProgress) {
     this._progress = progress;
-    this.listeners.forEach((listener: ZenUploadListener) => {
-      listener.onProgress?.(this, progress);
-    });
   }
 
   get progress() {
@@ -118,11 +113,6 @@ export class ZenUpload {
 
   set error(error: ZenError | null | undefined) {
     this._error = error;
-    if (error) {
-      this.listeners.forEach((listener: ZenUploadListener) => {
-        listener.onError?.(this, error);
-      });
-    }
   }
 
   get error() {
@@ -131,11 +121,6 @@ export class ZenUpload {
 
   set isCompleted(completed: boolean) {
     this._isCompleted = completed;
-    if (completed) {
-      this.listeners.forEach((listener: ZenUploadListener) => {
-        listener.onComplete?.(this);
-      });
-    }
   }
 
   get isCompleted() {
@@ -151,7 +136,9 @@ export class ZenUpload {
     this.abortController = controller;
 
     this.error = null;
-    this.notifyStart();
+    this.listeners.forEach((listener: ZenUploadListener) => {
+      listener.onStart?.(this);
+    });
 
     const result = await this.uploader.uploadFile(this.source, {
       name: this.name,

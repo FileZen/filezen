@@ -1,11 +1,7 @@
 import axios, { AxiosInstance } from 'axios';
 import { DEFAULT_API_URL } from './constants';
 import { ZenFile, ZenList, ZenUploaderParams, ZenUploadSource } from './types';
-import {
-  buildZenErrorResult,
-  buildZenSuccessResult,
-  ZenResult,
-} from './ZenResult';
+import { buildZenErrorResult, buildZenSuccessResult, ZenResult } from './ZenResult';
 import { ZenUploader } from './ZenUploader';
 
 export type ZenApiOptions = {
@@ -25,16 +21,17 @@ export class ZenApi {
       options.apiKey ??
       process.env.FILEZEN_API_KEY ??
       process.env.REACT_APP_FILEZEN_API_KEY ??
-      process.env.NEXT_PUBLIC_FILEZEN_API_KEY;
+      process.env.NEXT_PUBLIC_FILEZEN_API_KEY ??
+      process.env.EXPO_PUBLIC_FILEZEN_API_KEY;
     if (!targetApiKey) {
       try {
-        // @ts-ignore
-        targetApiKey = import.meta.env.FILEZEN_API_KEY;
-      } catch (ignore) {}
+        targetApiKey = eval('import.meta.env.FILEZEN_API_KEY');
+      } catch (ignore) {
+      }
     }
     if (!targetApiKey) {
       throw new Error(
-        "No API key provided, it's should be provided in options or via environment variable FILEZEN_API_KEY or NEXT_PUBLIC_FILEZEN_API_KEY or REACT_APP_FILEZEN_API_KEY",
+        'No API key provided, it\'s should be provided in options or via environment variable FILEZEN_API_KEY or NEXT_PUBLIC_FILEZEN_API_KEY or REACT_APP_FILEZEN_API_KEY or EXPO_PUBLIC_FILEZEN_API_KEY',
       );
     }
     this.apiKey = targetApiKey;

@@ -11,7 +11,7 @@ import {
   ZenUploaderParams,
   ZenUploadSource,
 } from './types';
-import { isNode } from './utils';
+import { isBase64, isNode, isUri, isUrl } from './utils';
 import { ZenError } from './ZenError';
 import {
   buildZenErrorResult,
@@ -42,9 +42,11 @@ export class ZenUploader {
   ): Promise<ZenResult<ZenFile>> {
     try {
       if (typeof source === 'string') {
-        if (this.isUrl(source)) {
+        if (isUrl(source)) {
           return await this.uploadFromUrl(source, params);
-        } else if (this.isBase64(source)) {
+        } else if (isUri(source)) {
+          return await this.uploadFromUri(source, params);
+        } else if (isBase64(source)) {
           return await this.uploadFromBase64(source, params);
         }
         return await this.uploadFromText(source, params);
@@ -151,6 +153,34 @@ export class ZenUploader {
     return buildZenSuccessResult(file);
   }
 
+  private async uploadFromUri(
+    uri: string,
+    params: ZenUploaderParams,
+  ): Promise<ZenResult<ZenFile>> {
+    // For string sources (URLs), fetch the data and stream it
+    const response = await fetch(uri, {
+      signal: params.abortController?.signal,
+    });
+
+    if (!response.ok) {
+      throw new ZenError(
+        response.status,
+        `Failed to fetch from URI: ${response.statusText}`,
+      );
+    }
+    const blob = await response.blob();
+    const file = new File([blob], params.name ?? `file-${Date.now()}`, {
+      type: params.mimeType ?? 'application/octet-stream',
+    });
+    // The body part is a "blob", which in React Native just means
+    // an object with a `uri` attribute. Optionally, it can also
+    // have a `name` and `type` attribute to specify filename and
+    // content type (cf. web Blob interface.)
+    Object.assign(file, { uri: uri });
+
+    return await this.uploadFromBlob(file, params);
+  }
+
   private async uploadFromBase64(
     base64: string,
     params: ZenUploaderParams,
@@ -218,6 +248,7 @@ export class ZenUploader {
     }
 
     const headers: { [key: string]: string | number } = {
+      'Content-Type': 'multipart/form-data',
       ...this.options.headers,
     };
     if (params.projectId) {
@@ -237,6 +268,7 @@ export class ZenUploader {
       .post(uploadUrl, formData, {
         headers: headers,
         signal: params.abortController?.signal,
+        maxRedirects: 0,
         onUploadProgress: (progress: AxiosProgressEvent) => {
           params.onUploadProgress?.({
             bytes: progress.loaded,
@@ -439,20 +471,5 @@ export class ZenUploader {
       result = (this.options.url ?? 'https://api.filezen.dev') + path;
     }
     return result;
-  }
-
-  // String source helper methods
-  private isUrl(str: string): boolean {
-    try {
-      new URL(str);
-      return str.startsWith('http://') || str.startsWith('https://');
-    } catch {
-      return false;
-    }
-  }
-
-  private isBase64(str: string): boolean {
-    // Check for data URL format or pure base64
-    return str.startsWith('data:') || /^[A-Za-z0-9+/]*={0,2}$/.test(str);
   }
 }

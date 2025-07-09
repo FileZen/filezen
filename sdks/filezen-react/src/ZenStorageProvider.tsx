@@ -10,23 +10,21 @@ import {
   ZenUploadListener,
   ZenUploadSource,
 } from '@filezen/js';
-import React, {
-  PropsWithChildren,
-  useCallback,
-  useContext,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import React, { PropsWithChildren, useCallback, useContext, useMemo, useRef, useState } from 'react';
 
-export type FileZenProviderPickerOptions = {
+// Platform detection utility
+const isBrowser: boolean =
+  typeof window !== 'undefined' &&
+  typeof window.document !== 'undefined';
+
+export type ZenStorageProviderPickerOptions = {
   folder?: string;
   folderId?: string;
   accept?: string;
   multiple?: boolean;
 };
 
-export interface IFileZenContext {
+export interface IZenStorageProviderContext {
   storage: ZenStorage;
   setProjectId: (projectId?: string | null) => void;
   getProjectId: () => string | null | undefined;
@@ -45,14 +43,14 @@ export interface IFileZenContext {
   cancel: (upload: ZenUpload) => void;
   addListener: (listener: ZenStorageListener) => void;
   removeListener: (listener: ZenStorageListener) => void;
-  openPicker: (options?: FileZenProviderPickerOptions) => void;
+  openPicker: (options?: ZenStorageProviderPickerOptions) => void;
 }
 
-export const FileZenContext = React.createContext<IFileZenContext>({} as any);
+export const ZenStorageProviderContext = React.createContext<IZenStorageProviderContext>({} as any);
 
-export type FileZenProviderProps = PropsWithChildren & ZenStorageOptions;
+export type ZenStorageProviderProps = PropsWithChildren & ZenStorageOptions;
 
-export const ZenStorageProvider = (props: FileZenProviderProps) => {
+export const ZenStorageProvider = (props: ZenStorageProviderProps) => {
   const { apiKey, apiUrl, keepUploads = true, children } = props;
   const [projectId, setProjectId] = React.useState<string | null | undefined>(
     null,
@@ -69,7 +67,7 @@ export const ZenStorageProvider = (props: FileZenProviderProps) => {
       apiUrl: apiUrl,
       keepUploads: keepUploads,
     });
-  }, [apiKey, apiUrl]);
+  }, [apiKey, apiUrl, keepUploads]);
 
   const uploadListener = useMemo(() => {
     const listener: ZenUploadListener = {};
@@ -99,24 +97,24 @@ export const ZenStorageProvider = (props: FileZenProviderProps) => {
   );
 
   const handleFileSelect =
-    (options?: FileZenProviderPickerOptions) =>
-    (event: React.ChangeEvent<HTMLInputElement>) => {
-      const files = event.target.files;
-      if (files && files.length > 0) {
-        const uploads: ZenStorageBulkItem[] = Array.from(files).map((file) => {
-          return {
-            source: file,
-            options: { ...options, projectId: projectId },
-          };
-        });
-        handleUpload(...uploads);
-        // Reset the input value so the same file can be selected again
-        event.target.value = '';
-      }
-    };
+    (options?: ZenStorageProviderPickerOptions) =>
+      (event: React.ChangeEvent<HTMLInputElement>) => {
+        const files = event.target.files;
+        if (files && files.length > 0) {
+          const uploads: ZenStorageBulkItem[] = Array.from(files).map((file) => {
+            return {
+              source: file,
+              options: { ...options, projectId: projectId },
+            };
+          });
+          handleUpload(...uploads);
+          // Reset the input value so the same file can be selected again
+          event.target.value = '';
+        }
+      };
 
   return (
-    <FileZenContext.Provider
+    <ZenStorageProviderContext.Provider
       value={{
         storage: storage,
         setProjectId: (projectId) => {
@@ -156,6 +154,11 @@ export const ZenStorageProvider = (props: FileZenProviderProps) => {
           storage.removeListener(listener);
         },
         openPicker: (options) => {
+          if (!isBrowser) {
+            console.warn('File picker is only available in browser environments');
+            return;
+          }
+
           if (fileInputRef.current) {
             // Set attributes directly on the input element
             if (options) {
@@ -176,17 +179,20 @@ export const ZenStorageProvider = (props: FileZenProviderProps) => {
         },
       }}
     >
-      <input
-        key={'filezen-file-picker'}
-        type="file"
-        ref={fileInputRef}
-        style={{ display: 'none' }}
-      />
+      {/* Only render input element in browser environments */}
+      {isBrowser && (
+        <input
+          key={'filezen-file-picker'}
+          type="file"
+          ref={fileInputRef}
+          style={{ display: 'none' }}
+        />
+      )}
       {children}
-    </FileZenContext.Provider>
+    </ZenStorageProviderContext.Provider>
   );
 };
 
 export function useFileZen() {
-  return useContext(FileZenContext);
+  return useContext(ZenStorageProviderContext);
 }
