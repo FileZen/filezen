@@ -1,11 +1,12 @@
 # FileZen Expo Demo 🚀
 
-A complete **React Native/Expo** demo showcasing [FileZen](https://filezen.dev) file upload capabilities with image previews, progress tracking, and error handling.
+A complete **React Native/Expo** demo showcasing [FileZen](https://filezen.dev) file upload capabilities with image
+previews, progress tracking, and error handling.
 
 ## 🌟 Features
 
 - ✅ **File Selection**: Images and documents via native pickers
-- ✅ **Real-time Upload Progress**: Visual progress indicators  
+- ✅ **Real-time Upload Progress**: Visual progress indicators
 - ✅ **Image Previews**: Automatic thumbnails with on-the-fly resizing
 - ✅ **Error Handling**: Comprehensive upload error management
 - ✅ **TypeScript Support**: Fully typed FileZen integration
@@ -24,6 +25,7 @@ yarn add @filezen/js @filezen/react expo-document-picker expo-image-picker
 Choose between two providers based on your needs:
 
 #### Option A: ZenStorageProvider (Direct Upload)
+
 For direct uploads to FileZen without a server:
 
 ```tsx
@@ -42,6 +44,7 @@ export default function App() {
 ```
 
 #### Option B: ZenClientProvider (Server Integration)
+
 For server-side presigned URL generation:
 
 ```tsx
@@ -51,7 +54,7 @@ import { ZenClientProvider } from '@filezen/react';
 export default function App() {
   return (
     <ZenClientProvider
-      serverUrl="https://your-server.com/api/filezen" // Your server endpoint
+      signUrl="https://your-server.com/api/filezen/sign" // Your server endpoint
     >
       {/* Your app components */}
     </ZenClientProvider>
@@ -81,7 +84,7 @@ export default function FileUpload() {
 
     if (!result.canceled && result.assets[0]) {
       const asset = result.assets[0];
-      
+
       // Upload with FileZen
       await upload(asset.uri, {
         name: asset.fileName || `image_${Date.now()}.jpg`,
@@ -130,7 +133,7 @@ export default function FileUpload() {
 
     if (!result.canceled && result.assets[0]) {
       const asset = result.assets[0];
-      
+
       // Upload with FileZen
       await upload(asset.uri, {
         name: asset.fileName || `image_${Date.now()}.jpg`,
@@ -163,16 +166,17 @@ export default function FileUpload() {
 
 ### Provider Comparison
 
-| Feature | ZenStorageProvider | ZenClientProvider |
-|---------|-------------------|-------------------|
-| **Upload Method** | Direct to FileZen | Direct to FileZen |
-| **API Key** | Required (client-side) | Server-side only |
-| **Server Required** | No | Yes (for generating signed URLs) |
-| **Use Case** | Simple apps, prototypes | Production apps with custom logic |
+| Feature             | ZenStorageProvider      | ZenClientProvider                 |
+|---------------------|-------------------------|-----------------------------------|
+| **Upload Method**   | Direct to FileZen       | Direct to FileZen                 |
+| **API Key**         | Required (client-side)  | Server-side only                  |
+| **Server Required** | No                      | Yes (for generating signed URLs)  |
+| **Use Case**        | Simple apps, prototypes | Production apps with custom logic |
 
 ### FileZen API Setup
 
 #### For ZenStorageProvider (Direct Upload)
+
 1. **Get API Key**: Sign up at [filezen.dev](https://filezen.dev)
 2. **Configure Provider**:
 
@@ -184,12 +188,13 @@ export default function FileUpload() {
 ```
 
 #### For ZenClientProvider (Server Integration)
+
 1. **Set up server endpoint** that generates presigned URLs
 2. **Configure Provider**:
 
 ```tsx
 <ZenClientProvider
-  serverUrl="https://your-server.com/api/filezen" // Your server endpoint
+  signUrl="https://your-server.com/api/filezen/sign" // Your server endpoint
 >
 ```
 
@@ -202,14 +207,12 @@ FileZen automatically resizes images on-the-fly using URL parameters:
 <Image source={{ uri: upload.file?.url }} />
 
 // Resized thumbnail (120x120, cover fit)
-<Image source={{ 
-  uri: `${upload.file?.url}?width=120&height=120&fit=cover` 
+<Image source={{
+  uri: `${upload.file?.url}?width=120&height=120&fit=cover`
 }} />
 ```
 
 For all available resizing parameters, see the [Dynamic Image Documentation](https://docs.filezen.dev/dynamic-image).
-
-
 
 ## 🚀 Running the Demo
 
@@ -244,12 +247,14 @@ apps/expo-app/
 ## 🔍 Key Components
 
 ### `Upload.tsx`
+
 - File selection (images/documents)
 - Upload progress tracking
 - Error handling with alerts
 - File metadata display
 
 ### `UploadedFilesList.tsx`
+
 - Upload history with status indicators
 - Image previews with resizing
 - Error state management
