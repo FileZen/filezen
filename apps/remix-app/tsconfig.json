@@ -1,0 +1,43 @@
+{
+  "include": [
+    "remix.env.d.ts",
+    "**/*.ts",
+    "**/*.tsx"
+  ],
+  "compilerOptions": {
+    "lib": [
+      "DOM",
+      "DOM.Iterable",
+      "ES6"
+    ],
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "jsx": "react-jsx",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "target": "ES2020",
+    "strict": true,
+    "allowJs": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "baseUrl": ".",
+    "paths": {
+      "~/*": [
+        "./app/*"
+      ],
+      "@filezen/js": [
+        "../../sdks/filezen-js/src"
+      ],
+      "@filezen/js/server": [
+        "../../sdks/filezen-js/src/server"
+      ],
+      "@filezen/remix": [
+        "../../sdks/filezen-remix/src"
+      ],
+      "@filezen/react": [
+        "../../sdks/filezen-react/src"
+      ]
+    },
+    "noEmit": true
+  }
+} 
