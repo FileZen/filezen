@@ -96,11 +96,9 @@ export default function App() {
   return (
     <html>
       <body>
-        <ZenStorageProvider>
-          <ZenClientProvider api={zenApi}>
-            <Outlet />
-          </ZenClientProvider>
-        </ZenStorageProvider>
+        <ZenClientProvider api={zenApi}>
+          <Outlet />
+        </ZenClientProvider>
       </body>
     </html>
   );
